@@ -182,7 +182,8 @@ export default function ClientModal({ isOpen, onClose, client, onSaved }: Client
       onSaved()
       onClose()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error al guardar el cliente')
+      const msg = (err as { message?: string })?.message ?? JSON.stringify(err)
+      setError(msg || 'Error al guardar el cliente')
     } finally {
       setSaving(false)
     }
