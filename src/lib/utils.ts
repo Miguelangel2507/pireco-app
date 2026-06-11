@@ -8,21 +8,14 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('es-ES', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(amount)
+  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(amount)
 }
 
 export function formatDate(date: string | Date): string {
   return format(new Date(date), 'dd/MM/yyyy', { locale: es })
 }
 
-export function generateDocumentNumber(
-  prefix: string,
-  num: number,
-  year?: number
-): string {
+export function generateDocumentNumber(prefix: string, num: number, year?: number): string {
   const y = year ?? new Date().getFullYear()
   return `${prefix}-${y}-${String(num).padStart(4, '0')}`
 }

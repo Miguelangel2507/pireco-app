@@ -8,17 +8,26 @@ export function useTheme() {
   const [theme, setTheme] = useState<Theme>('light')
 
   useEffect(() => {
-    const stored = localStorage.getItem('pireco-theme') as Theme | null
-    const initial = stored ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-    setTheme(initial)
+    const stored = localStorage.getItem('theme') as Theme | null
+    if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      setTheme('dark')
+      document.documentElement.classList.add('dark')
+    } else {
+      setTheme('light')
+      document.documentElement.classList.remove('dark')
+    }
   }, [])
 
-  function toggle() {
-    const next = theme === 'light' ? 'dark' : 'light'
-    setTheme(next)
-    localStorage.setItem('pireco-theme', next)
-    document.documentElement.classList.toggle('dark', next === 'dark')
+  const toggleTheme = () => {
+    const newTheme: Theme = theme === 'light' ? 'dark' : 'light'
+    setTheme(newTheme)
+    localStorage.setItem('theme', newTheme)
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
   }
 
-  return { theme, toggle }
+  return { theme, toggleTheme }
 }

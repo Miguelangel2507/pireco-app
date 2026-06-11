@@ -1,58 +1,51 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
+import { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
-import type { User, UserRole } from '@/types/database'
 
 interface AuthState {
-  user: SupabaseUser | null
-  profile: User | null
-  role: UserRole | null
+  user: User | null
+  role: string | null
   loading: boolean
 }
 
 export function useAuth(): AuthState {
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    profile: null,
-    role: null,
-    loading: true,
-  })
+  const [user, setUser] = useState<User | null>(null)
+  const [role, setRole] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const supabase = createClient()
 
-    async function loadUser() {
-      const { data: { user } } = await supabase.auth.getUser()
+    const fetchUser = async () => {
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      setUser(currentUser)
 
-      if (!user) {
-        setState({ user: null, profile: null, role: null, loading: false })
-        return
+      if (currentUser) {
+        const { data } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', currentUser.id)
+          .single()
+        setRole(data?.role ?? null)
       }
 
-      const { data: profile } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      setState({
-        user,
-        profile: profile ?? null,
-        role: profile?.role ?? null,
-        loading: false,
-      })
+      setLoading(false)
     }
 
-    loadUser()
+    fetchUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      loadUser()
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      if (!session?.user) {
+        setRole(null)
+        setLoading(false)
+      }
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
-  return state
+  return { user, role, loading }
 }
