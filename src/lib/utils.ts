@@ -1,5 +1,7 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -13,13 +15,14 @@ export function formatCurrency(amount: number): string {
 }
 
 export function formatDate(date: string | Date): string {
-  return new Intl.DateTimeFormat('es-ES', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(new Date(date))
+  return format(new Date(date), 'dd/MM/yyyy', { locale: es })
 }
 
-export function generateDocumentNumber(prefix: string, num: number): string {
-  return `${prefix}${String(num).padStart(4, '0')}`
+export function generateDocumentNumber(
+  prefix: string,
+  num: number,
+  year?: number
+): string {
+  const y = year ?? new Date().getFullYear()
+  return `${prefix}-${y}-${String(num).padStart(4, '0')}`
 }

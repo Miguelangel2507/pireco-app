@@ -6,19 +6,18 @@ const montserrat = Montserrat({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-montserrat',
-  display: 'swap',
 })
 
 export const metadata: Metadata = {
   title: 'Pinturas Pireco SL',
-  description: 'Sistema de gestión interna para Pinturas Pireco SL',
+  description: 'Sistema de gestión para Pinturas Pireco SL',
 }
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
@@ -27,17 +26,21 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  var theme = localStorage.getItem('pireco-theme');
+                  var theme = localStorage.getItem('theme');
                   if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                     document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
                   }
-                } catch (e) {}
+                } catch(e) {}
               })();
             `,
           }}
         />
       </head>
-      <body className={`${montserrat.variable} font-sans`}>{children}</body>
+      <body className={`${montserrat.variable} font-montserrat antialiased`}>
+        {children}
+      </body>
     </html>
   )
 }

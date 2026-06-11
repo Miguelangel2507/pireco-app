@@ -1,41 +1,38 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { ThemeToggle } from '@/components/ThemeToggle'
-import { useAuth } from '@/hooks/useAuth'
+import ThemeToggle from '@/components/ThemeToggle'
 
-const pageTitles: Record<string, string> = {
-  '/':             'Panel de control',
-  '/clientes':     'Clientes',
+const routeTitles: Record<string, string> = {
+  '/': 'Dashboard',
+  '/clientes': 'Clientes',
   '/presupuestos': 'Presupuestos',
-  '/proformas':    'Proformas',
-  '/facturas':     'Facturas',
-  '/calendario':   'Calendario',
-  '/compras':      'Lista de compras',
-  '/ajustes':      'Ajustes',
+  '/proformas': 'Proformas',
+  '/facturas': 'Facturas',
+  '/calendario': 'Calendario',
+  '/compras': 'Compras',
+  '/ajustes': 'Ajustes',
 }
 
-export function Topbar() {
+export default function Topbar() {
   const pathname = usePathname()
-  const { profile } = useAuth()
-
-  const title = Object.entries(pageTitles)
-    .sort((a, b) => b[0].length - a[0].length)
-    .find(([path]) => pathname === path || (path !== '/' && pathname.startsWith(path)))?.[1]
-    ?? 'Pinturas Pireco'
+  const title = routeTitles[pathname] ?? 'Dashboard'
 
   return (
-    <header className="h-14 shrink-0 flex items-center justify-between px-6 border-b border-border bg-background/80 backdrop-blur-sm">
-      <h1 className="text-sm font-semibold text-foreground">{title}</h1>
+    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white md:block hidden">
+        {title}
+      </h2>
+      {/* Spacer for mobile (hamburger is fixed) */}
+      <div className="md:hidden w-10" />
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white md:hidden">
+        {title}
+      </h2>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
         <ThemeToggle />
-        <div
-          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
-          style={{ backgroundColor: profile?.avatar_color ?? '#1E3A8A' }}
-          title={profile?.name}
-        >
-          {profile?.name?.charAt(0).toUpperCase() ?? '?'}
+        <div className="w-9 h-9 rounded-full bg-primary-700 flex items-center justify-center text-white text-sm font-semibold">
+          PP
         </div>
       </div>
     </header>

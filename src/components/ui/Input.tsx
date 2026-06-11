@@ -1,37 +1,43 @@
+import { InputHTMLAttributes, forwardRef } from 'react'
 import { cn } from '@/lib/utils'
-import type { InputHTMLAttributes } from 'react'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
   error?: string
-  hint?: string
 }
 
-export function Input({ label, error, hint, className, id, ...props }: InputProps) {
-  const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-')
-
-  return (
-    <div className="space-y-1.5">
-      {label && (
-        <label htmlFor={inputId} className="text-sm font-medium text-foreground">
-          {label}
-        </label>
-      )}
-      <input
-        id={inputId}
-        className={cn(
-          'w-full h-9 px-3 rounded-lg border bg-background text-foreground text-sm',
-          'placeholder:text-muted-foreground',
-          'focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring',
-          'disabled:opacity-50 disabled:cursor-not-allowed',
-          'transition-default',
-          error ? 'border-red-500 focus:ring-red-500' : 'border-input',
-          className
+const Input = forwardRef<HTMLInputElement, InputProps>(
+  ({ className, label, error, id, ...props }, ref) => {
+    const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-')
+    return (
+      <div className="space-y-1">
+        {label && (
+          <label
+            htmlFor={inputId}
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            {label}
+          </label>
         )}
-        {...props}
-      />
-      {error && <p className="text-xs text-red-500">{error}</p>}
-      {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
-    </div>
-  )
-}
+        <input
+          ref={ref}
+          id={inputId}
+          className={cn(
+            'w-full px-3 py-2 rounded-lg border text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-700 focus:border-transparent transition',
+            error
+              ? 'border-red-500 focus:ring-red-500'
+              : 'border-gray-300 dark:border-gray-600',
+            className
+          )}
+          {...props}
+        />
+        {error && (
+          <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+        )}
+      </div>
+    )
+  }
+)
+Input.displayName = 'Input'
+
+export default Input

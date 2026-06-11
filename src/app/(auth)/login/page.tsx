@@ -2,9 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
-import { PaintBucket, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -13,135 +11,89 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
-  async function handleSubmit(e: React.FormEvent) {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
     setLoading(true)
+    setError(null)
 
+    const supabase = createClient()
     const { error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
     if (authError) {
-      setError(
-        authError.message === 'Invalid login credentials'
-          ? 'Email o contraseña incorrectos.'
-          : authError.message
-      )
+      setError(authError.message === 'Invalid login credentials'
+        ? 'Email o contraseña incorrectos'
+        : authError.message)
       setLoading(false)
       return
     }
 
     router.push('/')
-    router.refresh()
   }
 
   return (
-    <div className="bg-card rounded-2xl shadow-card border border-border p-8 space-y-8">
-      {/* Logo & Brand */}
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-14 h-14 rounded-2xl bg-navy-800 flex items-center justify-center shadow-soft">
-          <PaintBucket className="w-7 h-7 text-white" />
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-700 rounded-full mb-4">
+          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+          </svg>
         </div>
-        <div className="text-center">
-          <h1 className="text-xl font-bold text-foreground tracking-tight">
-            Pinturas Pireco
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Panel de gestión interna
-          </p>
-        </div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white font-montserrat">
+          Pinturas Pireco
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+          Inicia sesión en tu cuenta
+        </p>
       </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-1.5">
-          <label
-            htmlFor="email"
-            className="text-sm font-medium text-foreground"
-          >
+      <form onSubmit={handleLogin} className="space-y-5">
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Email
           </label>
           <input
             id="email"
             type="email"
-            autoComplete="email"
-            required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-700 focus:border-transparent transition"
             placeholder="tu@email.com"
-            className={cn(
-              'w-full h-10 px-3 rounded-lg border bg-background text-foreground text-sm',
-              'placeholder:text-muted-foreground',
-              'focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring',
-              'transition-default',
-              error ? 'border-red-500' : 'border-input'
-            )}
           />
         </div>
 
-        <div className="space-y-1.5">
-          <label
-            htmlFor="password"
-            className="text-sm font-medium text-foreground"
-          >
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Contraseña
           </label>
           <input
             id="password"
             type="password"
-            autoComplete="current-password"
-            required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-700 focus:border-transparent transition"
             placeholder="••••••••"
-            className={cn(
-              'w-full h-10 px-3 rounded-lg border bg-background text-foreground text-sm',
-              'placeholder:text-muted-foreground',
-              'focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring',
-              'transition-default',
-              error ? 'border-red-500' : 'border-input'
-            )}
           />
         </div>
 
         {error && (
-          <div className="rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 px-3 py-2">
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm px-4 py-3 rounded-lg">
+            {error}
           </div>
         )}
 
         <button
           type="submit"
           disabled={loading}
-          className={cn(
-            'w-full h-10 rounded-lg bg-navy-800 text-white text-sm font-semibold',
-            'hover:bg-navy-900 active:scale-[0.98]',
-            'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
-            'disabled:opacity-60 disabled:cursor-not-allowed',
-            'transition-default flex items-center justify-center gap-2'
-          )}
+          className="w-full bg-primary-700 hover:bg-primary-800 text-white font-semibold py-2.5 px-4 rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Iniciando sesión…
-            </>
-          ) : (
-            'Iniciar sesión'
-          )}
+          {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
         </button>
       </form>
-
-      <p className="text-center text-xs text-muted-foreground">
-        ¿Problemas para acceder? Contacta con el administrador.
-      </p>
     </div>
   )
 }

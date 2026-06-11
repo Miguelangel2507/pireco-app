@@ -1,103 +1,117 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  LayoutDashboard, Users, FileText, Receipt, Calendar,
-  ShoppingCart, Settings, PaintBucket, LogOut, ChevronRight,
-  FileCheck, FileClock,
+  Home,
+  Users,
+  FileText,
+  FilePlus,
+  Receipt,
+  Calendar,
+  ShoppingCart,
+  Settings,
+  LogOut,
+  Paintbrush,
+  X,
+  Menu,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
-import { useAuth } from '@/hooks/useAuth'
+import { cn } from '@/lib/utils'
 
 const navItems = [
-  { href: '/',             label: 'Panel',        icon: LayoutDashboard },
-  { href: '/clientes',     label: 'Clientes',     icon: Users },
+  { href: '/', label: 'Dashboard', icon: Home },
+  { href: '/clientes', label: 'Clientes', icon: Users },
   { href: '/presupuestos', label: 'Presupuestos', icon: FileText },
-  { href: '/proformas',    label: 'Proformas',    icon: FileClock },
-  { href: '/facturas',     label: 'Facturas',     icon: FileCheck },
-  { href: '/calendario',   label: 'Calendario',   icon: Calendar },
-  { href: '/compras',      label: 'Compras',      icon: ShoppingCart },
-  { href: '/ajustes',      label: 'Ajustes',      icon: Settings },
+  { href: '/proformas', label: 'Proformas', icon: FilePlus },
+  { href: '/facturas', label: 'Facturas', icon: Receipt },
+  { href: '/calendario', label: 'Calendario', icon: Calendar },
+  { href: '/compras', label: 'Compras', icon: ShoppingCart },
+  { href: '/ajustes', label: 'Ajustes', icon: Settings },
 ]
 
-export function Sidebar() {
+export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { profile } = useAuth()
+  const [mobileOpen, setMobileOpen] = useState(false)
 
-  async function handleLogout() {
+  const handleLogout = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/login')
   }
 
-  return (
-    <aside className="w-60 shrink-0 flex flex-col h-full bg-sidebar border-r border-sidebar-border">
-      {/* Brand */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-sidebar-border">
-        <div className="w-9 h-9 rounded-xl bg-navy-800 flex items-center justify-center shrink-0">
-          <PaintBucket className="w-5 h-5 text-white" />
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-center w-9 h-9 bg-primary-700 rounded-lg">
+          <Paintbrush className="w-5 h-5 text-white" />
         </div>
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-sidebar-foreground leading-tight truncate">
-            Pinturas Pireco
-          </p>
-          <p className="text-xs text-muted-foreground">Gestión interna</p>
+        <div>
+          <p className="font-bold text-sm text-gray-900 dark:text-white leading-tight">Pinturas</p>
+          <p className="font-bold text-sm text-primary-700 dark:text-primary-400 leading-tight">Pireco SL</p>
         </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {navItems.map(({ href, label, icon: Icon }) => {
           const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href)
           return (
             <Link
               key={href}
               href={href}
+              onClick={() => setMobileOpen(false)}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium',
-                'transition-default group',
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-sidebar-foreground hover:bg-sidebar-border/60'
+                  ? 'bg-primary-700 text-white'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
               )}
             >
-              <Icon className={cn('w-4 h-4 shrink-0', isActive ? 'opacity-100' : 'opacity-60 group-hover:opacity-80')} />
-              <span className="flex-1">{label}</span>
-              {isActive && <ChevronRight className="w-3.5 h-3.5 opacity-60" />}
+              <Icon className="w-5 h-5 flex-shrink-0" />
+              {label}
             </Link>
           )
         })}
       </nav>
 
-      {/* User */}
-      <div className="border-t border-sidebar-border p-3">
-        <div className="flex items-center gap-3 px-3 py-2">
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-            style={{ backgroundColor: profile?.avatar_color ?? '#1E3A8A' }}
-          >
-            {profile?.name?.charAt(0).toUpperCase() ?? '?'}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-sidebar-foreground truncate">
-              {profile?.name ?? 'Cargando…'}
-            </p>
-            <p className="text-xs text-muted-foreground capitalize">
-              {profile?.role === 'admin' ? 'Administrador' : 'Empleado'}
-            </p>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-default"
-            title="Cerrar sesión"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-          </button>
-        </div>
+      <div className="px-3 py-4 border-t border-gray-200 dark:border-gray-700">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+        >
+          <LogOut className="w-5 h-5" />
+          Cerrar sesión
+        </button>
       </div>
-    </aside>
+    </div>
+  )
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-full flex-shrink-0">
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile toggle button */}
+      <button
+        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700"
+        onClick={() => setMobileOpen(!mobileOpen)}
+      >
+        {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      </button>
+
+      {/* Mobile sidebar overlay */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-40 flex">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
+          <aside className="relative flex flex-col w-64 bg-white dark:bg-gray-800 h-full z-50">
+            <SidebarContent />
+          </aside>
+        </div>
+      )}
+    </>
   )
 }

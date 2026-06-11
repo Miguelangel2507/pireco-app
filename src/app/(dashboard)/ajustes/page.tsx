@@ -1,27 +1,10 @@
-import { Settings } from 'lucide-react'
-import { Card } from '@/components/ui/Card'
-
 export default function AjustesPage() {
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Ajustes</h1>
-        <p className="text-sm text-muted-foreground mt-1">Datos de empresa, numeración y configuración global</p>
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Ajustes</h1>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+        <p className="text-gray-500 dark:text-gray-400 text-lg">Módulo de ajustes próximamente</p>
       </div>
-
-      <Card>
-        <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-            <Settings className="w-6 h-6 text-muted-foreground" />
-          </div>
-          <div>
-            <p className="font-medium text-foreground">Ajustes de empresa</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Configuración de Pinturas Pireco SL — próximamente
-            </p>
-          </div>
-        </div>
-      </Card>
     </div>
   )
 }
