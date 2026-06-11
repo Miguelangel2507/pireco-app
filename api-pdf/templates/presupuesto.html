@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Montserrat', sans-serif; font-size: 10pt; color: #1a1a1a; }
+    /* Placeholder — será reemplazado por la plantilla real de presupuesto.html */
+    .page { padding: 2cm; min-height: 29.7cm; }
+    h1 { color: #1E3A8A; font-size: 18pt; margin-bottom: 8pt; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12pt; }
+    th { background: #1E3A8A; color: white; padding: 6pt 8pt; text-align: left; font-size: 9pt; }
+    td { padding: 5pt 8pt; border-bottom: 1px solid #e5e7eb; font-size: 9pt; }
+    .total { font-weight: 700; font-size: 11pt; color: #1E3A8A; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>PRESUPUESTO {{ budget.number }}</h1>
+
+    <p><strong>Cliente:</strong> {{ client.name }}</p>
+    <p><strong>Fecha:</strong> {{ budget.issue_date }}</p>
+    <p><strong>Válido hasta:</strong> {{ budget.expiry_date }}</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Descripción</th>
+          <th>Cantidad</th>
+          <th>Ud.</th>
+          <th>Precio unit.</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>
+            {{ item.description }}
+            {% if item.sub_description %}<br/><small>{{ item.sub_description }}</small>{% endif %}
+          </td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ item.unit }}</td>
+          <td>{{ "%.2f"|format(item.unit_price) }} €</td>
+          <td>{{ "%.2f"|format(item.quantity * item.unit_price) }} €</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4" style="text-align:right"><strong>Base imponible</strong></td>
+          <td class="total">{{ "%.2f"|format(totals.base) }} €</td>
+        </tr>
+        <tr>
+          <td colspan="4" style="text-align:right">IVA ({{ budget.iva_pct }}%)</td>
+          <td>{{ "%.2f"|format(totals.iva) }} €</td>
+        </tr>
+        <tr>
+          <td colspan="4" style="text-align:right"><strong>TOTAL</strong></td>
+          <td class="total">{{ "%.2f"|format(totals.total) }} €</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    {% if budget.notes %}
+    <p style="margin-top:16pt"><strong>Notas:</strong> {{ budget.notes }}</p>
+    {% endif %}
+  </div>
+</body>
+</html>
