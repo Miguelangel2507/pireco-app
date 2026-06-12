@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Search, Pencil, Trash2, FileText, ChevronDown, Receipt, FilePlus } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, FileText, Receipt, FilePlus } from 'lucide-react'
 import Button from '@/components/ui/Button'
-import BudgetStatusBadge from '@/components/presupuestos/BudgetStatusBadge'
 import BudgetModal from '@/components/presupuestos/BudgetModal'
 import DeleteBudgetModal from '@/components/presupuestos/DeleteBudgetModal'
 import type { Budget, BudgetItem, Client } from '@/types/database'
@@ -13,12 +12,12 @@ import { useRouter } from 'next/navigation'
 type BudgetWithItems = Budget & { budget_items: BudgetItem[] }
 type BudgetWithClient = BudgetWithItems & { client: Client | null }
 
-const STATUS_LABELS = {
-  draft: 'Borrador',
-  sent: 'Enviado',
-  accepted: 'Aceptado',
-  rejected: 'Rechazado',
-} as const
+const STATUS_OPTIONS = [
+  { value: 'draft',    label: 'Borrador',  color: 'text-gray-600 bg-gray-100' },
+  { value: 'sent',     label: 'Enviado',   color: 'text-blue-700 bg-blue-100' },
+  { value: 'accepted', label: 'Aceptado',  color: 'text-green-700 bg-green-100' },
+  { value: 'rejected', label: 'Rechazado', color: 'text-red-700 bg-red-100' },
+] as const
 
 function calcTotal(items: BudgetItem[], ivaPct: number) {
   const base = items.reduce((s, i) => s + (i.quantity ?? 0) * (i.unit_price ?? 0), 0)
@@ -35,27 +34,8 @@ export default function PresupuestosPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [selected, setSelected] = useState<BudgetWithItems | null>(null)
-  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
   const [generating, setGenerating] = useState<string | null>(null)
-  const [openStatusId, setOpenStatusId] = useState<string | null>(null)
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
-  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
-
-  useLayoutEffect(() => {
-    if (!openStatusId) return
-    const btn = buttonRefs.current[openStatusId]
-    if (!btn) return
-    const rect = btn.getBoundingClientRect()
-    setDropdownPos({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX })
-  }, [openStatusId])
-
-  useEffect(() => {
-    function handleClickOutside() { setOpenStatusId(null) }
-    if (openStatusId) {
-      setTimeout(() => document.addEventListener('mousedown', handleClickOutside), 0)
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [openStatusId])
+  const [statusError, setStatusError] = useState<string | null>(null)
 
   const fetchBudgets = useCallback(async () => {
     setLoading(true)
@@ -79,13 +59,9 @@ export default function PresupuestosPage() {
     )
   })
 
-  const [statusError, setStatusError] = useState<string | null>(null)
-
   async function handleStatusChange(budget: BudgetWithClient, newStatus: Budget['status']) {
-    setUpdatingStatus(budget.id)
     setStatusError(null)
     const { error } = await supabase.from('budgets').update({ status: newStatus }).eq('id', budget.id)
-    setUpdatingStatus(null)
     if (error) {
       setStatusError(`Error al cambiar estado: ${error.message}`)
     } else {
@@ -140,7 +116,6 @@ export default function PresupuestosPage() {
         .select('id')
         .single()
       if (error) throw error
-      // Copy budget items to invoice items
       const validItems = budget.budget_items.filter((i) => i.description)
       if (validItems.length > 0) {
         await supabase.from('invoice_items').insert(
@@ -190,7 +165,6 @@ export default function PresupuestosPage() {
         </Button>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -213,7 +187,7 @@ export default function PresupuestosPage() {
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
-              {s === 'all' ? 'Todos' : STATUS_LABELS[s]}
+              {s === 'all' ? 'Todos' : STATUS_OPTIONS.find((o) => o.value === s)?.label}
             </button>
           ))}
         </div>
@@ -247,117 +221,88 @@ export default function PresupuestosPage() {
                   <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-300 hidden sm:table-cell">Fecha</th>
                   <th className="text-right px-4 py-3 font-semibold text-gray-600 dark:text-gray-300 hidden lg:table-cell">Total</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-300">Estado</th>
-                  <th className="px-4 py-3 w-36" />
+                  <th className="px-4 py-3 w-28" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                {filtered.map((budget) => (
-                  <tr key={budget.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
-                    <td className="px-4 py-3">
-                      <span className="font-mono font-medium text-gray-900 dark:text-white text-xs">
-                        {budget.number}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900 dark:text-white">{budget.client?.name ?? '—'}</div>
-                      {budget.client?.city && <div className="text-xs text-gray-400 mt-0.5">{budget.client.city}</div>}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell">
-                      {budget.issue_date ? new Date(budget.issue_date).toLocaleDateString('es-ES') : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-right hidden lg:table-cell">
-                      <span className="font-semibold text-gray-900 dark:text-white">
-                        {calcTotal(budget.budget_items, budget.iva_pct).toLocaleString('es-ES', {
-                          minimumFractionDigits: 2, maximumFractionDigits: 2,
-                        })} €
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <BudgetStatusBadge status={budget.status} />
-                        <button
-                          ref={(el) => { buttonRefs.current[budget.id] = el }}
-                          className="p-0.5 rounded text-gray-300 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
-                          disabled={updatingStatus === budget.id}
-                          title="Cambiar estado"
-                          onClick={() => setOpenStatusId(openStatusId === budget.id ? null : budget.id)}
+                {filtered.map((budget) => {
+                  const statusOpt = STATUS_OPTIONS.find((o) => o.value === budget.status)
+                  return (
+                    <tr key={budget.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
+                      <td className="px-4 py-3">
+                        <span className="font-mono font-medium text-gray-900 dark:text-white text-xs">{budget.number}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-gray-900 dark:text-white">{budget.client?.name ?? '—'}</div>
+                        {budget.client?.city && <div className="text-xs text-gray-400 mt-0.5">{budget.client.city}</div>}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell">
+                        {budget.issue_date ? new Date(budget.issue_date).toLocaleDateString('es-ES') : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-right hidden lg:table-cell">
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {calcTotal(budget.budget_items, budget.iva_pct).toLocaleString('es-ES', {
+                            minimumFractionDigits: 2, maximumFractionDigits: 2,
+                          })} €
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={budget.status}
+                          onChange={(e) => handleStatusChange(budget, e.target.value as Budget['status'])}
+                          className={`text-xs font-medium px-2.5 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-700 ${statusOpt?.color ?? ''}`}
                         >
-                          <ChevronDown className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {budget.status === 'accepted' && (
-                          <>
-                            <button
-                              onClick={() => handleGenerateProforma(budget)}
-                              disabled={!!generating}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
-                              title="Generar proforma"
-                            >
-                              <Receipt className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleGenerateInvoice(budget)}
-                              disabled={!!generating}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                              title="Generar factura"
-                            >
-                              <FilePlus className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
-                        <button
-                          onClick={() => openEdit(budget)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
-                          title="Editar"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => openDelete(budget)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                          title="Eliminar"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {STATUS_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {budget.status === 'accepted' && (
+                            <>
+                              <button
+                                onClick={() => handleGenerateProforma(budget)}
+                                disabled={!!generating}
+                                className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                                title="Generar proforma"
+                              >
+                                <Receipt className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleGenerateInvoice(budget)}
+                                disabled={!!generating}
+                                className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                title="Generar factura directa"
+                              >
+                                <FilePlus className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => openEdit(budget)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                            title="Editar"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => openDelete(budget)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
-
-      {/* Fixed dropdown rendered outside overflow containers */}
-      {openStatusId && (
-        <div
-          className="fixed z-[9999] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-1 min-w-[130px]"
-          style={{ top: dropdownPos.top, left: dropdownPos.left }}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          {(['draft', 'sent', 'accepted', 'rejected'] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => {
-                const b = budgets.find((x) => x.id === openStatusId)
-                if (b) handleStatusChange(b, s)
-                setOpenStatusId(null)
-              }}
-              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                budgets.find((x) => x.id === openStatusId)?.status === s
-                  ? 'font-semibold text-primary-700'
-                  : 'text-gray-700 dark:text-gray-300'
-              }`}
-            >
-              {STATUS_LABELS[s]}
-            </button>
-          ))}
-        </div>
-      )}
 
       <BudgetModal
         isOpen={modalOpen}
