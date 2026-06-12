@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Search, Pencil, Trash2, FileText, ChevronDown } from 'lucide-react'
 import Button from '@/components/ui/Button'
@@ -34,17 +34,24 @@ export default function PresupuestosPage() {
   const [selected, setSelected] = useState<BudgetWithItems | null>(null)
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
   const [openStatusId, setOpenStatusId] = useState<string | null>(null)
-  const statusDropdownRef = useRef<HTMLDivElement>(null)
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
+  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+
+  useLayoutEffect(() => {
+    if (!openStatusId) return
+    const btn = buttonRefs.current[openStatusId]
+    if (!btn) return
+    const rect = btn.getBoundingClientRect()
+    setDropdownPos({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX })
+  }, [openStatusId])
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
-        setOpenStatusId(null)
-      }
+    function handleClickOutside() { setOpenStatusId(null) }
+    if (openStatusId) {
+      setTimeout(() => document.addEventListener('mousedown', handleClickOutside), 0)
     }
-    document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  }, [openStatusId])
 
   const fetchBudgets = useCallback(async () => {
     setLoading(true)
@@ -192,33 +199,17 @@ export default function PresupuestosPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="relative inline-block" ref={openStatusId === budget.id ? statusDropdownRef : null}>
-                        <div className="flex items-center gap-1">
-                          <BudgetStatusBadge status={budget.status} />
-                          <button
-                            className="p-0.5 rounded text-gray-300 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
-                            disabled={updatingStatus === budget.id}
-                            title="Cambiar estado"
-                            onClick={() => setOpenStatusId(openStatusId === budget.id ? null : budget.id)}
-                          >
-                            <ChevronDown className="w-3 h-3" />
-                          </button>
-                        </div>
-                        {openStatusId === budget.id && (
-                          <div className="absolute left-0 top-full mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-1 min-w-[130px]">
-                            {(['draft', 'sent', 'accepted', 'rejected'] as const).map((s) => (
-                              <button
-                                key={s}
-                                onClick={() => { handleStatusChange(budget, s); setOpenStatusId(null) }}
-                                className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                                  budget.status === s ? 'font-semibold text-primary-700' : 'text-gray-700 dark:text-gray-300'
-                                }`}
-                              >
-                                {STATUS_LABELS[s]}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                      <div className="flex items-center gap-1">
+                        <BudgetStatusBadge status={budget.status} />
+                        <button
+                          ref={(el) => { buttonRefs.current[budget.id] = el }}
+                          className="p-0.5 rounded text-gray-300 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                          disabled={updatingStatus === budget.id}
+                          title="Cambiar estado"
+                          onClick={() => setOpenStatusId(openStatusId === budget.id ? null : budget.id)}
+                        >
+                          <ChevronDown className="w-3 h-3" />
+                        </button>
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -246,6 +237,33 @@ export default function PresupuestosPage() {
           </div>
         )}
       </div>
+
+      {/* Fixed dropdown rendered outside overflow containers */}
+      {openStatusId && (
+        <div
+          className="fixed z-[9999] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-1 min-w-[130px]"
+          style={{ top: dropdownPos.top, left: dropdownPos.left }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          {(['draft', 'sent', 'accepted', 'rejected'] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => {
+                const b = budgets.find((x) => x.id === openStatusId)
+                if (b) handleStatusChange(b, s)
+                setOpenStatusId(null)
+              }}
+              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                budgets.find((x) => x.id === openStatusId)?.status === s
+                  ? 'font-semibold text-primary-700'
+                  : 'text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              {STATUS_LABELS[s]}
+            </button>
+          ))}
+        </div>
+      )}
 
       <BudgetModal
         isOpen={modalOpen}
