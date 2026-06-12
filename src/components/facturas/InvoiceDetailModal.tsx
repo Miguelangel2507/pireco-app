@@ -138,8 +138,8 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onSaved }
     : invoice.invoice_items.sort((a, b) => a.sort_order - b.sort_order)
 
   const subtotal = (editing ? items : invoice.invoice_items).reduce((s, i) => {
-    const qty = parseFloat((i as ItemDraft).quantity ?? String((i as InvoiceItem).quantity ?? 0)) || (i as InvoiceItem).quantity ?? 0
-    const price = parseFloat((i as ItemDraft).unit_price ?? String((i as InvoiceItem).unit_price ?? 0)) || (i as InvoiceItem).unit_price ?? 0
+    const qty = (parseFloat((i as ItemDraft).quantity ?? String((i as InvoiceItem).quantity ?? 0)) || ((i as InvoiceItem).quantity ?? 0))
+    const price = (parseFloat((i as ItemDraft).unit_price ?? String((i as InvoiceItem).unit_price ?? 0)) || ((i as InvoiceItem).unit_price ?? 0))
     return s + (qty as number) * (price as number)
   }, 0)
   const ivaAmount = subtotal * (invoice.iva_pct / 100)
