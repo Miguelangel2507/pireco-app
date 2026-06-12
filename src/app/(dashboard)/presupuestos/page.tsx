@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Search, Pencil, Trash2, FileText, ChevronDown } from 'lucide-react'
 import Button from '@/components/ui/Button'
@@ -33,6 +33,18 @@ export default function PresupuestosPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [selected, setSelected] = useState<BudgetWithItems | null>(null)
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
+  const [openStatusId, setOpenStatusId] = useState<string | null>(null)
+  const statusDropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+        setOpenStatusId(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const fetchBudgets = useCallback(async () => {
     setLoading(true)
@@ -180,32 +192,33 @@ export default function PresupuestosPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="relative inline-block">
+                      <div className="relative inline-block" ref={openStatusId === budget.id ? statusDropdownRef : null}>
                         <div className="flex items-center gap-1">
                           <BudgetStatusBadge status={budget.status} />
-                          <div className="relative group/status">
-                            <button
-                              className="p-0.5 rounded text-gray-300 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
-                              disabled={updatingStatus === budget.id}
-                              title="Cambiar estado"
-                            >
-                              <ChevronDown className="w-3 h-3" />
-                            </button>
-                            <div className="absolute left-0 top-full mt-1 z-10 hidden group-hover/status:block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 min-w-[130px]">
-                              {(['draft', 'sent', 'accepted', 'rejected'] as const).map((s) => (
-                                <button
-                                  key={s}
-                                  onClick={() => handleStatusChange(budget, s)}
-                                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                                    budget.status === s ? 'font-semibold text-primary-700' : 'text-gray-700 dark:text-gray-300'
-                                  }`}
-                                >
-                                  {STATUS_LABELS[s]}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
+                          <button
+                            className="p-0.5 rounded text-gray-300 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                            disabled={updatingStatus === budget.id}
+                            title="Cambiar estado"
+                            onClick={() => setOpenStatusId(openStatusId === budget.id ? null : budget.id)}
+                          >
+                            <ChevronDown className="w-3 h-3" />
+                          </button>
                         </div>
+                        {openStatusId === budget.id && (
+                          <div className="absolute left-0 top-full mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-1 min-w-[130px]">
+                            {(['draft', 'sent', 'accepted', 'rejected'] as const).map((s) => (
+                              <button
+                                key={s}
+                                onClick={() => { handleStatusChange(budget, s); setOpenStatusId(null) }}
+                                className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                                  budget.status === s ? 'font-semibold text-primary-700' : 'text-gray-700 dark:text-gray-300'
+                                }`}
+                              >
+                                {STATUS_LABELS[s]}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3">

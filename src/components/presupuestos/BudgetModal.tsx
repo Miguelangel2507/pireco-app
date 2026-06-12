@@ -6,7 +6,7 @@ import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { createClient } from '@/lib/supabase/client'
-import type { Budget, BudgetItem, Client } from '@/types/database'
+import type { Budget, BudgetItem, Client, Treatment, CompanySettings } from '@/types/database'
 
 type BudgetWithItems = Budget & { budget_items: BudgetItem[] }
 
@@ -47,6 +47,10 @@ export default function BudgetModal({ isOpen, onClose, budget, onSaved }: Budget
   const isEdit = budget !== null
 
   const [clients, setClients] = useState<Client[]>([])
+  const [treatments, setTreatments] = useState<Treatment[]>([])
+  const [selectedTreatments, setSelectedTreatments] = useState<string[]>([])
+
+  const [budgetNumber, setBudgetNumber] = useState('')
   const [clientId, setClientId] = useState('')
   const [issueDate, setIssueDate] = useState('')
   const [expiryDate, setExpiryDate] = useState('')
@@ -58,15 +62,26 @@ export default function BudgetModal({ isOpen, onClose, budget, onSaved }: Budget
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchClients = useCallback(async () => {
-    const { data } = await supabase.from('clients').select('id, name').order('name')
-    setClients((data as Client[]) ?? [])
+  // Drag state
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+
+  const fetchData = useCallback(async () => {
+    const [clientsRes, treatmentsRes, settingsRes] = await Promise.all([
+      supabase.from('clients').select('id, name').order('name'),
+      supabase.from('treatments').select('*').eq('is_active', true).order('sort_order'),
+      supabase.from('company_settings').select('default_conditions, next_budget_num').single(),
+    ])
+    setClients((clientsRes.data as Client[]) ?? [])
+    setTreatments((treatmentsRes.data as Treatment[]) ?? [])
+    return settingsRes.data as Pick<CompanySettings, 'default_conditions' | 'next_budget_num'> | null
   }, [supabase])
 
   useEffect(() => {
-    if (isOpen) {
-      fetchClients()
+    if (!isOpen) return
+    fetchData().then((settings) => {
       if (budget) {
+        setBudgetNumber(budget.number)
         setClientId(budget.client_id ?? '')
         setIssueDate(budget.issue_date ?? '')
         setExpiryDate(budget.expiry_date ?? '')
@@ -89,18 +104,33 @@ export default function BudgetModal({ isOpen, onClose, budget, onSaved }: Budget
                 }))
             : [newItem(0)]
         )
+        // Load linked treatments
+        supabase
+          .from('budget_treatments')
+          .select('treatment_id')
+          .eq('budget_id', budget.id)
+          .then(({ data }) => setSelectedTreatments((data ?? []).map((r) => r.treatment_id)))
       } else {
+        const nextNum = (settings?.next_budget_num ?? 1) as number
+        setBudgetNumber(`PRE-${String(nextNum).padStart(4, '0')}`)
         setClientId('')
         setIssueDate(new Date().toISOString().slice(0, 10))
         setExpiryDate('')
         setIvaPct(21)
         setNotes('')
-        setConditions('')
+        setConditions(settings?.default_conditions ?? '')
         setItems([newItem(0)])
+        setSelectedTreatments([])
       }
       setError(null)
-    }
-  }, [isOpen, budget, fetchClients])
+    })
+  }, [isOpen, budget, fetchData, supabase])
+
+  function toggleTreatment(id: string) {
+    setSelectedTreatments((prev) =>
+      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
+    )
+  }
 
   function addItem() {
     setItems((prev) => [...prev, newItem(prev.length)])
@@ -114,6 +144,31 @@ export default function BudgetModal({ isOpen, onClose, budget, onSaved }: Budget
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, [key]: value } : item)))
   }
 
+  function handleDragStart(index: number) {
+    setDragIndex(index)
+  }
+
+  function handleDragOver(e: React.DragEvent, index: number) {
+    e.preventDefault()
+    setDragOverIndex(index)
+  }
+
+  function handleDrop(index: number) {
+    if (dragIndex === null || dragIndex === index) {
+      setDragIndex(null)
+      setDragOverIndex(null)
+      return
+    }
+    setItems((prev) => {
+      const next = [...prev]
+      const [moved] = next.splice(dragIndex, 1)
+      next.splice(index, 0, moved)
+      return next.map((item, i) => ({ ...item, sort_order: i }))
+    })
+    setDragIndex(null)
+    setDragOverIndex(null)
+  }
+
   const subtotal = items.reduce((sum, item) => {
     const qty = parseFloat(item.quantity) || 0
     const price = parseFloat(item.unit_price) || 0
@@ -125,6 +180,7 @@ export default function BudgetModal({ isOpen, onClose, budget, onSaved }: Budget
   async function handleSave() {
     setError(null)
     if (!clientId) { setError('Selecciona un cliente'); return }
+    if (!budgetNumber.trim()) { setError('El número de presupuesto es obligatorio'); return }
 
     setSaving(true)
     try {
@@ -134,6 +190,7 @@ export default function BudgetModal({ isOpen, onClose, budget, onSaved }: Budget
         const { error: err } = await supabase
           .from('budgets')
           .update({
+            number: budgetNumber.trim(),
             client_id: clientId,
             issue_date: issueDate || null,
             expiry_date: expiryDate || null,
@@ -145,18 +202,10 @@ export default function BudgetModal({ isOpen, onClose, budget, onSaved }: Budget
         if (err) throw err
         budgetId = budget.id
       } else {
-        // Get next number
-        const { data: settings } = await supabase
-          .from('company_settings')
-          .select('next_budget_num')
-          .single()
-        const nextNum = (settings?.next_budget_num ?? 1) as number
-        const number = `PRE-${String(nextNum).padStart(4, '0')}`
-
         const { data: inserted, error: err } = await supabase
           .from('budgets')
           .insert({
-            number,
+            number: budgetNumber.trim(),
             client_id: clientId,
             status: 'draft',
             issue_date: issueDate || null,
@@ -170,10 +219,17 @@ export default function BudgetModal({ isOpen, onClose, budget, onSaved }: Budget
         if (err) throw err
         budgetId = inserted.id
 
-        await supabase
-          .from('company_settings')
-          .update({ next_budget_num: nextNum + 1 })
-          .eq('id', (await supabase.from('company_settings').select('id').single()).data?.id)
+        // Increment counter only if number matches pattern PRE-XXXX
+        if (/^PRE-\d+$/.test(budgetNumber.trim())) {
+          const num = parseInt(budgetNumber.replace('PRE-', ''), 10)
+          const { data: settings } = await supabase.from('company_settings').select('id, next_budget_num').single()
+          if (settings && num >= (settings.next_budget_num ?? 1)) {
+            await supabase
+              .from('company_settings')
+              .update({ next_budget_num: num + 1 })
+              .eq('id', settings.id)
+          }
+        }
       }
 
       // Replace items
@@ -197,6 +253,14 @@ export default function BudgetModal({ isOpen, onClose, budget, onSaved }: Budget
           }))
         )
         if (itemsErr) throw itemsErr
+      }
+
+      // Replace treatments
+      await supabase.from('budget_treatments').delete().eq('budget_id', budgetId)
+      if (selectedTreatments.length > 0) {
+        await supabase.from('budget_treatments').insert(
+          selectedTreatments.map((tid) => ({ budget_id: budgetId, treatment_id: tid }))
+        )
       }
 
       onSaved()
@@ -224,7 +288,15 @@ export default function BudgetModal({ isOpen, onClose, budget, onSaved }: Budget
 
         {/* Header fields */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="sm:col-span-2">
+          <div>
+            <Input
+              label="Número"
+              value={budgetNumber}
+              onChange={(e) => setBudgetNumber(e.target.value)}
+              placeholder="PRE-0001"
+            />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Cliente *
             </label>
@@ -264,7 +336,6 @@ export default function BudgetModal({ isOpen, onClose, budget, onSaved }: Budget
           </div>
 
           <div className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
-            {/* Table header */}
             <div className="grid grid-cols-[1.5rem_1fr_5rem_4rem_5rem_4.5rem_1.5rem] gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 text-xs font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600">
               <span />
               <span>Descripción</span>
@@ -278,9 +349,20 @@ export default function BudgetModal({ isOpen, onClose, budget, onSaved }: Budget
             {items.map((item, index) => (
               <div
                 key={index}
-                className="grid grid-cols-[1.5rem_1fr_5rem_4rem_5rem_4.5rem_1.5rem] gap-2 px-3 py-2 border-b last:border-b-0 border-gray-100 dark:border-gray-700 items-start"
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={() => handleDrop(index)}
+                onDragEnd={() => { setDragIndex(null); setDragOverIndex(null) }}
+                className={`grid grid-cols-[1.5rem_1fr_5rem_4rem_5rem_4.5rem_1.5rem] gap-2 px-3 py-2 border-b last:border-b-0 border-gray-100 dark:border-gray-700 items-start transition-colors ${
+                  dragOverIndex === index && dragIndex !== index
+                    ? 'bg-primary-50 dark:bg-primary-900/20'
+                    : dragIndex === index
+                    ? 'opacity-40'
+                    : ''
+                }`}
               >
-                <GripVertical className="w-4 h-4 text-gray-300 dark:text-gray-600 mt-2 cursor-grab" />
+                <GripVertical className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-2 cursor-grab active:cursor-grabbing" />
                 <div className="space-y-1">
                   <input
                     type="text"
@@ -343,6 +425,29 @@ export default function BudgetModal({ isOpen, onClose, budget, onSaved }: Budget
           </div>
         </div>
 
+        {/* Treatments */}
+        {treatments.length > 0 && (
+          <div className="space-y-2">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Tratamientos</span>
+            <div className="flex flex-wrap gap-2">
+              {treatments.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => toggleTreatment(t.id)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                    selectedTreatments.includes(t.id)
+                      ? 'bg-primary-700 text-white border-primary-700'
+                      : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-primary-700 hover:text-primary-700'
+                  }`}
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Totals + extra fields */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="space-y-4">
@@ -357,11 +462,14 @@ export default function BudgetModal({ isOpen, onClose, budget, onSaved }: Budget
               />
             </div>
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Condiciones</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Condiciones
+                <span className="text-xs font-normal text-gray-400 ml-2">(se puede editar en Ajustes)</span>
+              </label>
               <textarea
                 value={conditions}
                 onChange={(e) => setConditions(e.target.value)}
-                rows={3}
+                rows={4}
                 placeholder="Condiciones del presupuesto..."
                 className="w-full px-3 py-2 rounded-lg border text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-700 focus:border-transparent transition border-gray-300 dark:border-gray-600 resize-none"
               />
