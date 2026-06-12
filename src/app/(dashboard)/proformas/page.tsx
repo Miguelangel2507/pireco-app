@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Search, Receipt, FilePlus, Trash2 } from 'lucide-react'
+import { Search, Receipt, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import ProformaDetailModal from '@/components/proformas/ProformaDetailModal'
 import type { Proforma, Client, Budget, BudgetItem } from '@/types/database'
 
 type ProformaFull = Proforma & {
@@ -23,6 +24,8 @@ export default function ProformasPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [converting, setConverting] = useState<string | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [selectedProforma, setSelectedProforma] = useState<ProformaFull | null>(null)
 
   const fetchProformas = useCallback(async () => {
     setLoading(true)
@@ -45,6 +48,7 @@ export default function ProformasPage() {
   })
 
   async function handleConvertToInvoice(proforma: ProformaFull) {
+    setDetailOpen(false)
     setConverting(proforma.id)
     try {
       // Number: same as proforma but FAC- prefix
@@ -156,7 +160,7 @@ export default function ProformasPage() {
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {filtered.map((proforma) => (
-                  <tr key={proforma.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
+                  <tr key={proforma.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group cursor-pointer" onClick={() => { setSelectedProforma(proforma); setDetailOpen(true) }}>
                     <td className="px-4 py-3">
                       <span className="font-mono font-medium text-gray-900 dark:text-white text-xs">
                         {proforma.number}
@@ -194,18 +198,8 @@ export default function ProformasPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {proforma.status === 'active' && (
-                          <button
-                            onClick={() => handleConvertToInvoice(proforma)}
-                            disabled={converting === proforma.id}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                            title="Convertir a factura"
-                          >
-                            <FilePlus className="w-4 h-4" />
-                          </button>
-                        )}
                         <button
-                          onClick={() => handleDelete(proforma.id)}
+                          onClick={(e) => { e.stopPropagation(); handleDelete(proforma.id) }}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                           title="Eliminar"
                         >
@@ -220,6 +214,13 @@ export default function ProformasPage() {
           </div>
         )}
       </div>
+      <ProformaDetailModal
+        isOpen={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        proforma={selectedProforma}
+        onConvert={() => selectedProforma && handleConvertToInvoice(selectedProforma)}
+        converting={converting === selectedProforma?.id}
+      />
     </div>
   )
 }

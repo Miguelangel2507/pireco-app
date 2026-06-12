@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Search, FileText, Trash2, ChevronDown, CheckCircle } from 'lucide-react'
+import InvoiceDetailModal from '@/components/facturas/InvoiceDetailModal'
 import type { Invoice, InvoiceItem, Client } from '@/types/database'
 
 type InvoiceFull = Invoice & {
@@ -28,6 +29,8 @@ export default function FacturasPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<Invoice['status'] | 'all'>('all')
   const [openStatusId, setOpenStatusId] = useState<string | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceFull | null>(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
   const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
 
@@ -173,7 +176,7 @@ export default function FacturasPage() {
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {filtered.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
+                  <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group cursor-pointer" onClick={() => { setSelectedInvoice(invoice); setDetailOpen(true) }}>
                     <td className="px-4 py-3">
                       <span className="font-mono font-medium text-gray-900 dark:text-white text-xs">
                         {invoice.number}
@@ -209,7 +212,7 @@ export default function FacturasPage() {
                           ref={(el) => { buttonRefs.current[invoice.id] = el }}
                           className="p-0.5 rounded text-gray-300 hover:text-gray-500 transition-colors"
                           title="Cambiar estado"
-                          onClick={() => setOpenStatusId(openStatusId === invoice.id ? null : invoice.id)}
+                          onClick={(e) => { e.stopPropagation(); setOpenStatusId(openStatusId === invoice.id ? null : invoice.id) }}
                         >
                           <ChevronDown className="w-3 h-3" />
                         </button>
@@ -224,7 +227,7 @@ export default function FacturasPage() {
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {invoice.status !== 'paid' && (
                           <button
-                            onClick={() => handleMarkPaid(invoice)}
+                            onClick={(e) => { e.stopPropagation(); handleMarkPaid(invoice) }}
                             className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
                             title="Marcar como cobrada"
                           >
@@ -232,7 +235,7 @@ export default function FacturasPage() {
                           </button>
                         )}
                         <button
-                          onClick={() => handleDelete(invoice.id)}
+                          onClick={(e) => { e.stopPropagation(); handleDelete(invoice.id) }}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                           title="Eliminar"
                         >
@@ -273,6 +276,13 @@ export default function FacturasPage() {
           ))}
         </div>
       )}
+
+      <InvoiceDetailModal
+        isOpen={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        invoice={selectedInvoice}
+        onSaved={() => { fetchInvoices(); setDetailOpen(false) }}
+      />
     </div>
   )
 }
