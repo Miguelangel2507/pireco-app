@@ -12,9 +12,9 @@ type InvoiceFull = Invoice & {
 }
 
 const STATUS_CONFIG = {
-  pending:  { label: 'Pendiente', classes: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' },
-  paid:     { label: 'Pagada',    classes: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' },
-  overdue:  { label: 'Vencida',   classes: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
+  pending: { label: 'Pendiente', bg: '#FEF3C7', color: '#92400E' },
+  paid:    { label: 'Pagada',    bg: '#D1FAE5', color: '#065F46' },
+  overdue: { label: 'Vencida',   bg: '#FEE2E2', color: '#B91C1C' },
 } as const
 
 function calcTotal(items: InvoiceItem[], ivaPct: number) {
@@ -142,7 +142,7 @@ export default function FacturasPage() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="rounded-card overflow-hidden" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
         {loading ? (
           <div className="p-12 text-center text-gray-400">
             <div className="inline-block w-6 h-6 border-2 border-primary-700 border-t-transparent rounded-full animate-spin mb-3" />
@@ -205,7 +205,7 @@ export default function FacturasPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_CONFIG[invoice.status].classes}`}>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: STATUS_CONFIG[invoice.status].bg, color: STATUS_CONFIG[invoice.status].color }}>
                           {STATUS_CONFIG[invoice.status].label}
                         </span>
                         <button
@@ -253,8 +253,8 @@ export default function FacturasPage() {
 
       {openStatusId && (
         <div
-          className="fixed z-[9999] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-1 min-w-[130px]"
-          style={{ top: dropdownPos.top, left: dropdownPos.left }}
+          className="fixed z-[9999] rounded-lg shadow-xl py-1 min-w-[130px]"
+          style={{ top: dropdownPos.top, left: dropdownPos.left, backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
           onMouseDown={(e) => e.stopPropagation()}
         >
           {(['pending', 'paid', 'overdue'] as const).map((s) => (

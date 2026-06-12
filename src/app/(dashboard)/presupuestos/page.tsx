@@ -13,10 +13,10 @@ type BudgetWithItems = Budget & { budget_items: BudgetItem[] }
 type BudgetWithClient = BudgetWithItems & { client: Client | null }
 
 const STATUS_OPTIONS = [
-  { value: 'draft',    label: 'Borrador',  color: 'text-gray-600 bg-gray-100' },
-  { value: 'sent',     label: 'Enviado',   color: 'text-blue-700 bg-blue-100' },
-  { value: 'accepted', label: 'Aceptado',  color: 'text-green-700 bg-green-100' },
-  { value: 'rejected', label: 'Rechazado', color: 'text-red-700 bg-red-100' },
+  { value: 'draft',    label: 'Borrador',  bg: 'rgba(255,159,10,0.15)',  color: '#C07000' },
+  { value: 'sent',     label: 'Enviado',   bg: 'rgba(59,111,212,0.18)',  color: '#2B5AB8' },
+  { value: 'accepted', label: 'Aceptado',  bg: 'rgba(48,209,88,0.15)',   color: '#1A8A38' },
+  { value: 'rejected', label: 'Rechazado', bg: 'rgba(255,69,58,0.12)',   color: '#C0392B' },
 ] as const
 
 function calcTotal(items: BudgetItem[], ivaPct: number) {
@@ -193,7 +193,7 @@ export default function PresupuestosPage() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="rounded-card overflow-hidden" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
         {loading ? (
           <div className="p-12 text-center text-gray-400">
             <div className="inline-block w-6 h-6 border-2 border-primary-700 border-t-transparent rounded-full animate-spin mb-3" />
@@ -215,12 +215,12 @@ export default function PresupuestosPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-300">Número</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-300">Cliente</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-300 hidden sm:table-cell">Fecha</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600 dark:text-gray-300 hidden lg:table-cell">Total</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-300">Estado</th>
+                <tr style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'var(--bg)' }}>
+                  <th className="text-left px-4 py-3" style={{ color: 'var(--text-sub)', fontSize: 11, fontWeight: 600 }}>Número</th>
+                  <th className="text-left px-4 py-3" style={{ color: 'var(--text-sub)', fontSize: 11, fontWeight: 600 }}>Cliente</th>
+                  <th className="text-left px-4 py-3 hidden sm:table-cell" style={{ color: 'var(--text-sub)', fontSize: 11, fontWeight: 600 }}>Fecha</th>
+                  <th className="text-right px-4 py-3 hidden lg:table-cell" style={{ color: 'var(--text-sub)', fontSize: 11, fontWeight: 600 }}>Total</th>
+                  <th className="text-left px-4 py-3" style={{ color: 'var(--text-sub)', fontSize: 11, fontWeight: 600 }}>Estado</th>
                   <th className="px-4 py-3 w-28" />
                 </tr>
               </thead>
@@ -228,9 +228,9 @@ export default function PresupuestosPage() {
                 {filtered.map((budget) => {
                   const statusOpt = STATUS_OPTIONS.find((o) => o.value === budget.status)
                   return (
-                    <tr key={budget.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
+                    <tr key={budget.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group" style={{ borderBottom: '1px solid var(--border)' }}>
                       <td className="px-4 py-3">
-                        <span className="font-mono font-medium text-gray-900 dark:text-white text-xs">{budget.number}</span>
+                        <span className="font-mono font-medium" style={{ color: 'var(--text)', fontSize: 11 }}>{budget.number}</span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="font-medium text-gray-900 dark:text-white">{budget.client?.name ?? '—'}</div>
@@ -250,7 +250,12 @@ export default function PresupuestosPage() {
                         <select
                           value={budget.status}
                           onChange={(e) => handleStatusChange(budget, e.target.value as Budget['status'])}
-                          className={`text-xs font-medium px-2.5 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-700 ${statusOpt?.color ?? ''}`}
+                          className="text-xs font-semibold px-2.5 py-0.5 rounded-chip border-0 cursor-pointer focus:outline-none"
+                          style={{
+                            backgroundColor: statusOpt?.bg ?? 'transparent',
+                            color: statusOpt?.color ?? 'var(--text)',
+                            fontSize: 11,
+                          }}
                         >
                           {STATUS_OPTIONS.map((o) => (
                             <option key={o.value} value={o.value}>{o.label}</option>

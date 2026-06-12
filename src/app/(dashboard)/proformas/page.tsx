@@ -126,7 +126,7 @@ export default function ProformasPage() {
         />
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="rounded-card overflow-hidden" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
         {loading ? (
           <div className="p-12 text-center text-gray-400">
             <div className="inline-block w-6 h-6 border-2 border-primary-700 border-t-transparent rounded-full animate-spin mb-3" />
@@ -187,11 +187,11 @@ export default function ProformasPage() {
                     </td>
                     <td className="px-4 py-3">
                       {proforma.status === 'active' ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-chip text-xs font-medium" style={{ backgroundColor: '#E0E7FF', color: '#3730A3' }}>
                           Activa
                         </span>
                       ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-chip text-xs font-medium" style={{ backgroundColor: 'rgba(0,0,0,0.06)', color: 'var(--text-sub)' }}>
                           Convertida
                         </span>
                       )}
