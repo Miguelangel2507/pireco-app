@@ -4,34 +4,41 @@ import { usePathname } from 'next/navigation'
 import ThemeToggle from '@/components/ThemeToggle'
 
 const routeTitles: Record<string, string> = {
-  '/': 'Dashboard',
-  '/clientes': 'Clientes',
+  '/':             'Panel',
+  '/clientes':     'Clientes',
   '/presupuestos': 'Presupuestos',
-  '/proformas': 'Proformas',
-  '/facturas': 'Facturas',
-  '/calendario': 'Calendario',
-  '/compras': 'Compras',
-  '/ajustes': 'Ajustes',
+  '/proformas':    'Proformas',
+  '/facturas':     'Facturas',
+  '/calendario':   'Calendario',
+  '/compras':      'Compras',
+  '/ajustes':      'Ajustes',
 }
 
 export default function Topbar() {
   const pathname = usePathname()
-  const title = routeTitles[pathname] ?? 'Dashboard'
+  const title = routeTitles[pathname] ?? 'Panel'
 
   return (
-    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white md:block hidden">
+    <header
+      className="flex items-center justify-between px-6 py-3.5 flex-shrink-0"
+      style={{
+        backgroundColor: 'var(--surface)',
+        borderBottom: '1px solid var(--border)',
+      }}
+    >
+      <div className="md:hidden w-8" />
+      <h2
+        className="font-semibold"
+        style={{ color: 'var(--text)', fontSize: 14 }}
+      >
         {title}
       </h2>
-      {/* Spacer for mobile (hamburger is fixed) */}
-      <div className="md:hidden w-10" />
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white md:hidden">
-        {title}
-      </h2>
-
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <ThemeToggle />
-        <div className="w-9 h-9 rounded-full bg-primary-700 flex items-center justify-center text-white text-sm font-semibold">
+        <div
+          className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold"
+          style={{ backgroundColor: '#1E3A8A', fontSize: 11 }}
+        >
           PP
         </div>
       </div>
