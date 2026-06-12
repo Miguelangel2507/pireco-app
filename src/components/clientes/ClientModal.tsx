@@ -196,7 +196,7 @@ export default function ClientModal({ isOpen, onClose, client, onSaved }: Client
       title={isEdit ? 'Editar cliente' : 'Nuevo cliente'}
       className="max-w-2xl"
     >
-      <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
+      <div className="space-y-5 max-h-[70vh] overflow-y-auto px-1">
         {error && (
           <div className="rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400">
             {error}
