@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Search, Pencil, Trash2, FileText, ChevronDown } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, FileText, ChevronDown, Receipt, FilePlus } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import BudgetStatusBadge from '@/components/presupuestos/BudgetStatusBadge'
 import BudgetModal from '@/components/presupuestos/BudgetModal'
 import DeleteBudgetModal from '@/components/presupuestos/DeleteBudgetModal'
 import type { Budget, BudgetItem, Client } from '@/types/database'
+import { useRouter } from 'next/navigation'
 
 type BudgetWithItems = Budget & { budget_items: BudgetItem[] }
 type BudgetWithClient = BudgetWithItems & { client: Client | null }
@@ -25,6 +26,8 @@ function calcTotal(items: BudgetItem[], ivaPct: number) {
 }
 
 export default function PresupuestosPage() {
+  const router = useRouter()
+  const supabase = createClient()
   const [budgets, setBudgets] = useState<BudgetWithClient[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -33,6 +36,7 @@ export default function PresupuestosPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [selected, setSelected] = useState<BudgetWithItems | null>(null)
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
+  const [generating, setGenerating] = useState<string | null>(null)
   const [openStatusId, setOpenStatusId] = useState<string | null>(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
   const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
@@ -55,14 +59,13 @@ export default function PresupuestosPage() {
 
   const fetchBudgets = useCallback(async () => {
     setLoading(true)
-    const supabase = createClient()
     const { data } = await supabase
       .from('budgets')
       .select('*, budget_items(*), client:clients(id, name, cif, city, contact_name, phone, email, address, postal_code, notes, created_at)')
       .order('created_at', { ascending: false })
     setBudgets((data as BudgetWithClient[]) ?? [])
     setLoading(false)
-  }, [])
+  }, [supabase])
 
   useEffect(() => { fetchBudgets() }, [fetchBudgets])
 
@@ -78,10 +81,81 @@ export default function PresupuestosPage() {
 
   async function handleStatusChange(budget: BudgetWithClient, newStatus: Budget['status']) {
     setUpdatingStatus(budget.id)
-    const supabase = createClient()
     await supabase.from('budgets').update({ status: newStatus }).eq('id', budget.id)
     setUpdatingStatus(null)
     fetchBudgets()
+  }
+
+  async function getNextDocNumber(): Promise<{ num: number; settingsId: string }> {
+    const { data } = await supabase.from('company_settings').select('id, next_invoice_num').single()
+    return { num: data?.next_invoice_num ?? 1, settingsId: data?.id ?? '' }
+  }
+
+  async function handleGenerateProforma(budget: BudgetWithClient) {
+    setGenerating(budget.id + ':proforma')
+    try {
+      const { num, settingsId } = await getNextDocNumber()
+      const number = `PRO-${String(num).padStart(4, '0')}`
+      const { error } = await supabase.from('proformas').insert({
+        number,
+        budget_id: budget.id,
+        client_id: budget.client_id,
+        status: 'active',
+        issue_date: new Date().toISOString().slice(0, 10),
+        notes: budget.notes,
+      })
+      if (error) throw error
+      await supabase.from('company_settings').update({ next_invoice_num: num + 1 }).eq('id', settingsId)
+      router.push('/proformas')
+    } catch (err) {
+      alert((err as { message?: string })?.message ?? 'Error al generar proforma')
+    } finally {
+      setGenerating(null)
+    }
+  }
+
+  async function handleGenerateInvoice(budget: BudgetWithClient) {
+    setGenerating(budget.id + ':invoice')
+    try {
+      const { num, settingsId } = await getNextDocNumber()
+      const number = `FAC-${String(num).padStart(4, '0')}`
+      const { data: inv, error } = await supabase
+        .from('invoices')
+        .insert({
+          number,
+          budget_id: budget.id,
+          client_id: budget.client_id,
+          status: 'pending',
+          issue_date: new Date().toISOString().slice(0, 10),
+          iva_pct: budget.iva_pct,
+          notes: budget.notes,
+        })
+        .select('id')
+        .single()
+      if (error) throw error
+      // Copy budget items to invoice items
+      const validItems = budget.budget_items.filter((i) => i.description)
+      if (validItems.length > 0) {
+        await supabase.from('invoice_items').insert(
+          validItems.map((i) => ({
+            invoice_id: inv.id,
+            description: i.description,
+            sub_description: i.sub_description,
+            quantity: i.quantity,
+            unit: i.unit,
+            unit_price: i.unit_price,
+            tag: i.tag,
+            sort_order: i.sort_order,
+          }))
+        )
+      }
+      await supabase.from('company_settings').update({ next_invoice_num: num + 1 }).eq('id', settingsId)
+      router.push('/facturas')
+    } catch (err) {
+      alert((err as { message?: string })?.message ?? 'Error al generar factura')
+    } finally {
+      setGenerating(null)
+    }
   }
 
   const openCreate = () => { setSelected(null); setModalOpen(true) }
@@ -158,10 +232,9 @@ export default function PresupuestosPage() {
                   <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-300">Número</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-300">Cliente</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-300 hidden sm:table-cell">Fecha</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-300 hidden md:table-cell">Caducidad</th>
                   <th className="text-right px-4 py-3 font-semibold text-gray-600 dark:text-gray-300 hidden lg:table-cell">Total</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-300">Estado</th>
-                  <th className="px-4 py-3 w-20" />
+                  <th className="px-4 py-3 w-36" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -173,28 +246,16 @@ export default function PresupuestosPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {budget.client?.name ?? '—'}
-                      </div>
-                      {budget.client?.city && (
-                        <div className="text-xs text-gray-400 mt-0.5">{budget.client.city}</div>
-                      )}
+                      <div className="font-medium text-gray-900 dark:text-white">{budget.client?.name ?? '—'}</div>
+                      {budget.client?.city && <div className="text-xs text-gray-400 mt-0.5">{budget.client.city}</div>}
                     </td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell">
-                      {budget.issue_date
-                        ? new Date(budget.issue_date).toLocaleDateString('es-ES')
-                        : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400 hidden md:table-cell">
-                      {budget.expiry_date
-                        ? new Date(budget.expiry_date).toLocaleDateString('es-ES')
-                        : '—'}
+                      {budget.issue_date ? new Date(budget.issue_date).toLocaleDateString('es-ES') : '—'}
                     </td>
                     <td className="px-4 py-3 text-right hidden lg:table-cell">
                       <span className="font-semibold text-gray-900 dark:text-white">
                         {calcTotal(budget.budget_items, budget.iva_pct).toLocaleString('es-ES', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
+                          minimumFractionDigits: 2, maximumFractionDigits: 2,
                         })} €
                       </span>
                     </td>
@@ -214,6 +275,26 @@ export default function PresupuestosPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {budget.status === 'accepted' && (
+                          <>
+                            <button
+                              onClick={() => handleGenerateProforma(budget)}
+                              disabled={!!generating}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                              title="Generar proforma"
+                            >
+                              <Receipt className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleGenerateInvoice(budget)}
+                              disabled={!!generating}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                              title="Generar factura"
+                            >
+                              <FilePlus className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={() => openEdit(budget)}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
