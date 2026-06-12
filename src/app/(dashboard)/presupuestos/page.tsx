@@ -79,11 +79,18 @@ export default function PresupuestosPage() {
     )
   })
 
+  const [statusError, setStatusError] = useState<string | null>(null)
+
   async function handleStatusChange(budget: BudgetWithClient, newStatus: Budget['status']) {
     setUpdatingStatus(budget.id)
-    await supabase.from('budgets').update({ status: newStatus }).eq('id', budget.id)
+    setStatusError(null)
+    const { error } = await supabase.from('budgets').update({ status: newStatus }).eq('id', budget.id)
     setUpdatingStatus(null)
-    fetchBudgets()
+    if (error) {
+      setStatusError(`Error al cambiar estado: ${error.message}`)
+    } else {
+      fetchBudgets()
+    }
   }
 
   async function getNextDocNumber(): Promise<{ num: number; settingsId: string }> {
@@ -164,6 +171,12 @@ export default function PresupuestosPage() {
 
   return (
     <div>
+      {statusError && (
+        <div className="mb-4 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+          {statusError}
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Presupuestos</h1>
