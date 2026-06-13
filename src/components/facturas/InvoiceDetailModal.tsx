@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
-import { CheckCircle, Plus, Trash2, GripVertical, FileText, LayoutList } from 'lucide-react'
+import { CheckCircle, Plus, Trash2, GripVertical, FileText, LayoutList, Download } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import DocumentPreview from '@/components/shared/DocumentPreview'
+import { downloadPdf } from '@/lib/downloadPdf'
 import type { Invoice, InvoiceItem, Client, CompanySettings } from '@/types/database'
 
 type InvoiceFull = Invoice & { invoice_items: InvoiceItem[]; client: Client | null }
@@ -54,6 +55,7 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onSaved }
   const [error, setError] = useState<string | null>(null)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [company, setCompany] = useState<CompanySettings | null>(null)
+  const [downloading, setDownloading] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -133,6 +135,31 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onSaved }
       setError((err as { message?: string })?.message ?? 'Error al guardar')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDownloadPdf() {
+    if (!invoice) return
+    setDownloading(true)
+    try {
+      await downloadPdf({
+        docType: 'invoice',
+        doc: {
+          number:    invoice.number,
+          status:    invoice.status,
+          issue_date: invoice.issue_date,
+          due_date:  invoice.due_date,
+          iva_pct:   invoice.iva_pct,
+          notes:     invoice.notes,
+        },
+        client: invoice.client,
+        items:  invoice.invoice_items,
+        company,
+      })
+    } catch (err) {
+      alert((err as Error).message)
+    } finally {
+      setDownloading(false)
     }
   }
 
@@ -349,6 +376,10 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onSaved }
             <div className="flex gap-2">
               <Button variant="secondary" onClick={onClose}>Cerrar</Button>
               <Button variant="secondary" onClick={startEditing}>Editar partidas</Button>
+              <Button variant="secondary" onClick={handleDownloadPdf} disabled={downloading}>
+                <Download className="w-3.5 h-3.5" />
+                {downloading ? 'Generando...' : 'PDF'}
+              </Button>
             </div>
             {invoice.status !== 'paid' && (
               <Button onClick={handleMarkPaid}>

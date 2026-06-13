@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
-import { FilePlus, FileText, LayoutList } from 'lucide-react'
+import { FilePlus, FileText, LayoutList, Download } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import DocumentPreview from '@/components/shared/DocumentPreview'
+import { downloadPdf } from '@/lib/downloadPdf'
 import type { Proforma, Client, Budget, BudgetItem, CompanySettings } from '@/types/database'
 
 type ProformaFull = Proforma & {
@@ -25,6 +26,7 @@ export default function ProformaDetailModal({ isOpen, onClose, proforma, onConve
   const supabase = createClient()
   const [tab, setTab] = useState<'data' | 'preview'>('data')
   const [company, setCompany] = useState<CompanySettings | null>(null)
+  const [downloading, setDownloading] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -35,10 +37,35 @@ export default function ProformaDetailModal({ isOpen, onClose, proforma, onConve
     }
   }, [isOpen])
 
-  if (!proforma) return null
-
-  const budget = proforma.budget
+  const budget = proforma?.budget ?? null
   const items = budget?.budget_items?.sort((a, b) => a.sort_order - b.sort_order) ?? []
+
+  async function handleDownloadPdf() {
+    if (!proforma) return
+    setDownloading(true)
+    try {
+      await downloadPdf({
+        docType: 'proforma',
+        doc: {
+          number:     proforma.number,
+          status:     proforma.status,
+          issue_date: proforma.issue_date,
+          iva_pct:    budget?.iva_pct ?? 21,
+          notes:      proforma.notes,
+        },
+        client:     proforma.client,
+        items,
+        conditions: budget?.conditions_text,
+        company,
+      })
+    } catch (err) {
+      alert((err as Error).message)
+    } finally {
+      setDownloading(false)
+    }
+  }
+
+  if (!proforma) return null
   const ivaPct = budget?.iva_pct ?? 21
   const subtotal = items.reduce((s, i) => s + (i.quantity ?? 0) * (i.unit_price ?? 0), 0)
   const ivaAmount = subtotal * (ivaPct / 100)
@@ -199,7 +226,13 @@ export default function ProformaDetailModal({ isOpen, onClose, proforma, onConve
       )}
 
       <div className="flex justify-between items-center pt-5 mt-5 border-t border-gray-200 dark:border-gray-700">
-        <Button variant="secondary" onClick={onClose}>Cerrar</Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={onClose}>Cerrar</Button>
+          <Button variant="secondary" onClick={handleDownloadPdf} disabled={downloading}>
+            <Download className="w-3.5 h-3.5" />
+            {downloading ? 'Generando...' : 'PDF'}
+          </Button>
+        </div>
         {proforma.status === 'active' && (
           <Button onClick={onConvert} disabled={converting}>
             <FilePlus className="w-4 h-4" />

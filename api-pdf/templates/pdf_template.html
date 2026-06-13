@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<style>
+/* ─────────────────────────────────────────────
+   PINTURAS PIRECO — Plantilla PDF v1.0
+   Generado con WeasyPrint
+   Fuente: Montserrat (TTF local)
+   Diseño aprobado por cliente — no modificar
+───────────────────────────────────────────── */
+
+@font-face { font-family: 'Montserrat'; src: url('{{ font_path }}/Montserrat-Regular.ttf'); font-weight: 400; }
+@font-face { font-family: 'Montserrat'; src: url('{{ font_path }}/Montserrat-Medium.ttf'); font-weight: 500; }
+@font-face { font-family: 'Montserrat'; src: url('{{ font_path }}/Montserrat-SemiBold.ttf'); font-weight: 600; }
+@font-face { font-family: 'Montserrat'; src: url('{{ font_path }}/Montserrat-Bold.ttf'); font-weight: 700; }
+
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Montserrat', sans-serif; color: #1C1C1E; }
+
+/* ── ESTRUCTURA ── */
+.page { width: 210mm; height: 296mm; page-break-after: always; position: relative; display: flex; flex-direction: column; }
+.page:last-child { page-break-after: avoid; }
+
+/* ── HEADER ── */
+.header { background: #1E3A8A; padding: 8mm 14mm; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.logo { height: 19mm; }
+.company { text-align: right; }
+.ci { font-size: 9pt; color: #BFDBFE; line-height: 1.7; font-weight: 400; }
+.ci.b { color: #fff; font-weight: 700; }
+
+/* ── BODY ── */
+.body { padding: 7mm 14mm 5mm; flex: 1; }
+
+/* ── META (cliente + número documento) ── */
+.meta { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5mm; }
+.meta-left { width: 95mm; }
+.badge-cliente { display: inline-block; font-size: 7pt; font-weight: 700; letter-spacing: 1.5pt; color: #1E3A8A; background: #EEF2FF; padding: 1.5pt 7pt; border-radius: 4pt; margin-bottom: 2mm; }
+.client-name { font-size: 11pt; font-weight: 700; margin-bottom: 1.5mm; }
+.client-det { font-size: 8.5pt; color: #6B7280; line-height: 1.55; }
+
+.pre-block { width: 62mm; }
+.pre-num-row { display: flex; justify-content: space-between; align-items: center; padding: 1.2mm 0 2mm; }
+.pre-label { font-size: 7pt; font-weight: 700; letter-spacing: 1.5pt; color: #1E3A8A; text-transform: uppercase; }
+.pre-num { font-size: 12pt; font-weight: 700; color: #1E3A8A; letter-spacing: -0.3pt; }
+.pre-row { display: flex; justify-content: space-between; align-items: center; padding: 1.6mm 0; border-bottom: 0.4pt solid #E5E7EB; }
+.pre-row:last-child { border-bottom: none; }
+.pr-l { font-size: 7pt; font-weight: 600; letter-spacing: 1pt; color: #9CA3AF; text-transform: uppercase; }
+.pr-v { font-size: 8.5pt; font-weight: 700; }
+.pr-status { font-size: 8pt; font-weight: 700; padding: 1.5pt 9pt; border-radius: 10pt; }
+.status-draft    { background: #FEF3C7; color: #92400E; }
+.status-sent     { background: #DBEAFE; color: #1E40AF; }
+.status-accepted { background: #D1FAE5; color: #065F46; }
+.status-rejected { background: #FEE2E2; color: #B91C1C; }
+.status-proforma { background: #E0E7FF; color: #3730A3; }
+.status-pending  { background: #FEF3C7; color: #92400E; }
+.status-paid     { background: #D1FAE5; color: #065F46; }
+.status-overdue  { background: #FEE2E2; color: #B91C1C; }
+
+.divider { height: 0.4pt; background: #E5E7EB; margin-bottom: 4mm; }
+
+/* ── TABLA CONCEPTOS ── */
+.thead { display: flex; background: #1E3A8A; border-radius: 5pt; padding: 2.4mm 4mm; margin-bottom: 1.5mm; }
+.th { font-size: 7pt; font-weight: 700; letter-spacing: 1pt; color: #fff; text-transform: uppercase; }
+.c-desc  { flex: 1; }
+.c-cant  { width: 26mm; text-align: right; }
+.c-precio { width: 30mm; text-align: right; }
+.c-total { width: 30mm; text-align: right; }
+
+/* Fila de concepto: línea gris + sub-línea blanca */
+.con-block { margin-bottom: 1.5mm; }
+.con-main { display: flex; align-items: center; background: #F9FAFB; border-radius: 4pt; padding: 2.2mm 4mm; }
+.con-name { font-size: 9pt; font-weight: 700; }
+.tnum { font-size: 8.5pt; color: #374151; }
+.tnum.b { font-weight: 700; color: #1C1C1E; }
+.con-extra { display: flex; align-items: center; gap: 3mm; padding: 1.2mm 4mm 0.5mm; }
+.con-sub { font-size: 7.5pt; color: #9CA3AF; line-height: 1.45; }
+
+/* Tags de categoría */
+.tag { display: inline-block; font-size: 6.5pt; font-weight: 700; padding: 1pt 6pt; border-radius: 7pt; flex-shrink: 0; }
+.tag-int { background: #D1FAE5; color: #065F46; }
+.tag-ext { background: #DBEAFE; color: #1E40AF; }
+.tag-met { background: #E5E7EB; color: #374151; }
+.tag-oth { background: #F3E8FF; color: #7E22CE; }
+
+/* ── NOTAS ── */
+.notas { background: #FFFBEB; border-left: 2mm solid #F59E0B; border-radius: 0 5pt 5pt 0; padding: 2.5mm 4mm; margin: 3mm 0; }
+.notas-l { font-size: 7.5pt; font-weight: 700; letter-spacing: 1.5pt; color: #92400E; text-transform: uppercase; margin-bottom: 2mm; }
+.notas-t { font-size: 8.5pt; color: #78350F; line-height: 1.5; }
+
+/* ── TOTALES ── */
+.tot-zone { display: flex; justify-content: flex-end; margin-bottom: 2mm; }
+.tot-box { width: 80mm; }
+.tot-row { display: flex; justify-content: space-between; padding: 1.8mm 4mm; border-bottom: 0.4pt solid #F3F4F6; }
+.tot-l { font-size: 8.5pt; color: #6B7280; }
+.tot-v { font-size: 8.5pt; font-weight: 700; }
+.tot-final { display: flex; justify-content: space-between; align-items: center; padding: 2.5mm 4mm; border-top: 1pt solid #1E3A8A; margin-top: 1mm; }
+.tf-l { font-size: 10.5pt; font-weight: 700; color: #1E3A8A; }
+.tf-v { font-size: 14pt; font-weight: 700; color: #1C1C1E; letter-spacing: -0.3pt; white-space: nowrap; }
+
+/* ── FOOTER (igual en las 3 páginas) ── */
+.footer { background: #F9FAFB; border-top: 0.4pt solid #F3F4F6; padding: 3.5mm 14mm; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.foot-pago { font-size: 8pt; color: #374151; }
+.foot-pago .lbl { font-weight: 700; letter-spacing: 1pt; color: #9CA3AF; text-transform: uppercase; font-size: 6.5pt; margin-right: 2mm; }
+.foot-pago .iban { font-weight: 700; color: #1E3A8A; }
+.foot-page { font-size: 8pt; color: #9CA3AF; flex-shrink: 0; margin-left: 6mm; }
+
+/* ── PÁGINAS 2-3 ── */
+.page-title { font-size: 14pt; font-weight: 700; color: #1E3A8A; margin-bottom: 3mm; }
+.title-rule { height: 1pt; background: #1E3A8A; margin-bottom: 5mm; }
+
+/* Condiciones: título inline seguido de texto sin salto de línea */
+.cond-item { margin-bottom: 2.8mm; }
+.cond-inline { font-weight: 700; color: #1C1C1E; }
+.cond-t { font-size: 7.5pt; line-height: 1.5; color: #374151; }
+
+/* Condiciones de aceptación */
+.acc-list { margin-top: 3mm; }
+.acc-item { font-size: 7.5pt; line-height: 1.5; color: #374151; margin-bottom: 1.5mm; padding-left: 4mm; position: relative; }
+.acc-item::before { content: "•"; position: absolute; left: 1mm; color: #1E3A8A; font-weight: 700; }
+
+/* Tratamientos */
+.trat-card { background: #F0F9FF; border-radius: 6pt; padding: 3.5mm 4.5mm; margin-bottom: 3mm; }
+.trat-h { font-size: 9pt; font-weight: 700; color: #1E3A8A; margin-bottom: 1.2mm; }
+.trat-t { font-size: 7.5pt; line-height: 1.5; color: #374151; }
+</style>
+</head>
+<body>
+
+{# ══════════════ PÁGINA 1 — PRECIOS ══════════════ #}
+<div class="page">
+  <div class="header">
+    <img class="logo" src="{{ logo_path }}" alt="Pireco">
+    <div class="company">
+      <div class="ci b">{{ company.name }} · {{ company.cif }}</div>
+      <div class="ci">{{ company.address }}</div>
+      <div class="ci">{{ company.postal_code }} {{ company.city }}, {{ company.province }}, España</div>
+      <div class="ci">{{ company.phone }} · {{ company.email }}</div>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="meta">
+      <div class="meta-left">
+        <span class="badge-cliente">CLIENTE</span>
+        <div class="client-name">{{ client.name }}</div>
+        <div class="client-det">
+          {% if client.cif %}{{ client.cif }}<br>{% endif %}
+          {{ client.address }}<br>
+          {{ client.postal_code }} {{ client.city }}{% if client.province %}, {{ client.province }}{% endif %}<br>
+          España
+        </div>
+      </div>
+      <div class="pre-block">
+        <div class="pre-num-row">
+          <span class="pre-label">{{ doc_type_label }}</span>
+          <span class="pre-num">{{ doc.number }}</span>
+        </div>
+        <div class="pre-row"><span class="pr-l">Fecha emisión</span><span class="pr-v">{{ doc.issue_date }}</span></div>
+        {% if doc.expiry_date %}<div class="pre-row"><span class="pr-l">Vencimiento</span><span class="pr-v">{{ doc.expiry_date }}</span></div>{% endif %}
+        {% if doc.due_date %}<div class="pre-row"><span class="pr-l">Vencimiento pago</span><span class="pr-v">{{ doc.due_date }}</span></div>{% endif %}
+        <div class="pre-row"><span class="pr-l">Estado</span><span class="pr-status status-{{ doc.status }}">{{ doc.status_label }}</span></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="thead">
+      <span class="th c-desc">Concepto</span>
+      <span class="th c-cant">Cant.</span>
+      <span class="th c-precio">Precio/Uni.</span>
+      <span class="th c-total">Total</span>
+    </div>
+
+    {% for item in items %}
+    <div class="con-block">
+      <div class="con-main">
+        <div class="c-desc con-name">{{ item.description }}</div>
+        <div class="c-cant tnum">{% if item.quantity %}{{ item.quantity }} {% if item.unit %}{{ item.unit }}{% endif %}{% else %}—{% endif %}</div>
+        <div class="c-precio tnum">{% if item.unit_price %}{{ item.unit_price }} €{% else %}—{% endif %}</div>
+        <div class="c-total tnum b">{% if item.total %}{{ item.total }} €{% else %}—{% endif %}</div>
+      </div>
+      {% if item.sub_description or item.tag %}
+      <div class="con-extra">
+        {% if item.tag %}<span class="tag tag-{{ item.tag }}">{{ item.tag_label }}</span>{% endif %}
+        {% if item.sub_description %}<span class="con-sub">{{ item.sub_description }}</span>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+
+    {% if doc.notes %}
+    <div class="notas">
+      <div class="notas-l">Notas</div>
+      <div class="notas-t">{{ doc.notes }}</div>
+    </div>
+    {% endif %}
+
+    <div class="tot-zone">
+      <div class="tot-box">
+        <div class="tot-row"><span class="tot-l">Base imponible</span><span class="tot-v">{{ doc.base_amount }} €</span></div>
+        <div class="tot-row"><span class="tot-l">IVA {{ doc.iva_pct }}%</span><span class="tot-v">{{ doc.iva_amount }} €</span></div>
+        <div class="tot-final"><span class="tf-l">Total</span><span class="tf-v">{{ doc.total_amount }} €</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="foot-pago"><span class="lbl">Método de pago</span> Transferencia bancaria — <span class="iban">{{ company.iban }}</span> · SWIFT: {{ company.swift }}</div>
+    <div class="foot-page">1 / {{ total_pages }}</div>
+  </div>
+</div>
+
+{# ══════════════ PÁGINA 2 — CONDICIONES ══════════════ #}
+<div class="page">
+  <div class="header">
+    <img class="logo" src="{{ logo_path }}" alt="Pireco">
+    <div class="company">
+      <div class="ci b">{{ company.name }} · {{ company.cif }}</div>
+      <div class="ci">{{ company.address }}</div>
+      <div class="ci">{{ company.postal_code }} {{ company.city }}, {{ company.province }}, España</div>
+      <div class="ci">{{ company.phone }} · {{ company.email }}</div>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="page-title">Condiciones</div>
+    <div class="title-rule"></div>
+
+    {% for cond in conditions %}
+    <div class="cond-item">
+      <div class="cond-t"><span class="cond-inline">{{ cond.title }}:</span> {{ cond.text }}</div>
+    </div>
+    {% endfor %}
+
+    <div class="page-title" style="margin-top:5mm;">Condiciones de aceptación</div>
+    <div class="title-rule"></div>
+    <div class="acc-list">
+      {% for item in acceptance_conditions %}
+      <div class="acc-item">{{ item }}</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="foot-pago"><span class="lbl">Método de pago</span> Transferencia bancaria — <span class="iban">{{ company.iban }}</span> · SWIFT: {{ company.swift }}</div>
+    <div class="foot-page">2 / {{ total_pages }}</div>
+  </div>
+</div>
+
+{# ══════════════ PÁGINA 3 — TRATAMIENTOS (solo si hay) ══════════════ #}
+{% if treatments %}
+<div class="page">
+  <div class="header">
+    <img class="logo" src="{{ logo_path }}" alt="Pireco">
+    <div class="company">
+      <div class="ci b">{{ company.name }} · {{ company.cif }}</div>
+      <div class="ci">{{ company.address }}</div>
+      <div class="ci">{{ company.postal_code }} {{ company.city }}, {{ company.province }}, España</div>
+      <div class="ci">{{ company.phone }} · {{ company.email }}</div>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="page-title">Tratamientos de superficies</div>
+    <div class="title-rule"></div>
+
+    {% for trat in treatments %}
+    <div class="trat-card">
+      <div class="trat-h">{{ trat.name }}</div>
+      <div class="trat-t">{{ trat.description }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="footer">
+    <div class="foot-pago"><span class="lbl">Método de pago</span> Transferencia bancaria — <span class="iban">{{ company.iban }}</span> · SWIFT: {{ company.swift }}</div>
+    <div class="foot-page">3 / {{ total_pages }}</div>
+  </div>
+</div>
+{% endif %}
+
+</body>
+</html>
