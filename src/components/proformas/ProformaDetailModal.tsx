@@ -39,8 +39,8 @@ export default function ProformaDetailModal({ isOpen, onClose, proforma, onConve
   const budget = proforma?.budget ?? null
   const items = budget?.budget_items?.sort((a, b) => a.sort_order - b.sort_order) ?? []
 
-  function handlePrint() {
-    printDocument('proforma-preview', proforma?.number ?? 'proforma')
+  async function handlePrint() {
+    await printDocument('proforma-preview', proforma?.number ?? 'proforma')
   }
 
   if (!proforma) return null

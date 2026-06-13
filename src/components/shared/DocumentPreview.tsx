@@ -30,7 +30,11 @@ function fmt(n: number) {
 }
 function fmtDate(d?: string | null) {
   if (!d) return ''
-  return new Date(d).toLocaleDateString('es-ES')
+  const dt = new Date(d)
+  const day = String(dt.getUTCDate()).padStart(2, '0')
+  const month = String(dt.getUTCMonth() + 1).padStart(2, '0')
+  const year = dt.getUTCFullYear()
+  return `${day}/${month}/${year}`
 }
 
 const TAG_LABEL: Record<string, string> = { int: 'Interior', ext: 'Exterior', met: 'Metal', oth: 'Otro' }
@@ -150,7 +154,7 @@ export default function DocumentPreview({
               <div style={{ fontSize: '8.5pt', color: '#6B7280', lineHeight: 1.55, fontFamily: font }}>
                 {client?.cif && <div>{client.cif}</div>}
                 {client?.address && <div>{client.address}</div>}
-                {(client?.postal_code || client?.city) && <div>{[client.postal_code, client.city].filter(Boolean).join(' ')}{client?.city ? ', Castellón' : ''}</div>}
+                {(client?.postal_code || client?.city) && <div>{[client.postal_code, client.city].filter(Boolean).join(' ')}</div>}
                 <div>España</div>
               </div>
             </div>

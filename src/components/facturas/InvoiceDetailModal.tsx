@@ -137,8 +137,8 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onSaved }
     }
   }
 
-  function handlePrint() {
-    printDocument('invoice-preview', invoice?.number ?? 'factura')
+  async function handlePrint() {
+    await printDocument('invoice-preview', invoice?.number ?? 'factura')
   }
 
   async function handleMarkPaid() {
