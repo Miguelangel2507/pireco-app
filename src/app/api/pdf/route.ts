@@ -7,11 +7,16 @@ const PDF_API = process.env.PDF_API_URL ?? 'http://localhost:8000'
 export async function POST(req: NextRequest) {
   const payload = await req.json()
 
-  // Wake up Railway service if sleeping (fire and forget health check first)
-  try {
-    await fetch(`${PDF_API}/health`, { method: 'GET', signal: AbortSignal.timeout(5000) })
-  } catch {
-    // ignore, proceed anyway
+  // Wake up Railway service — retry health until alive or 40s elapsed
+  const deadline = Date.now() + 40_000
+  while (Date.now() < deadline) {
+    try {
+      const r = await fetch(`${PDF_API}/health`, { method: 'GET', signal: AbortSignal.timeout(5000) })
+      if (r.ok) break
+    } catch {
+      // sleeping — wait and retry
+    }
+    await new Promise(resolve => setTimeout(resolve, 3000))
   }
 
   let res: Response
