@@ -6,7 +6,7 @@ import Button from '@/components/ui/Button'
 import { FilePlus, FileText, LayoutList, Download } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import DocumentPreview from '@/components/shared/DocumentPreview'
-import { downloadPdf } from '@/lib/downloadPdf'
+import { printDocument } from '@/lib/printDocument'
 import type { Proforma, Client, Budget, BudgetItem, CompanySettings } from '@/types/database'
 
 type ProformaFull = Proforma & {
@@ -26,7 +26,6 @@ export default function ProformaDetailModal({ isOpen, onClose, proforma, onConve
   const supabase = createClient()
   const [tab, setTab] = useState<'data' | 'preview'>('data')
   const [company, setCompany] = useState<CompanySettings | null>(null)
-  const [downloading, setDownloading] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -40,29 +39,8 @@ export default function ProformaDetailModal({ isOpen, onClose, proforma, onConve
   const budget = proforma?.budget ?? null
   const items = budget?.budget_items?.sort((a, b) => a.sort_order - b.sort_order) ?? []
 
-  async function handleDownloadPdf() {
-    if (!proforma) return
-    setDownloading(true)
-    try {
-      await downloadPdf({
-        docType: 'proforma',
-        doc: {
-          number:     proforma.number,
-          status:     proforma.status,
-          issue_date: proforma.issue_date,
-          iva_pct:    budget?.iva_pct ?? 21,
-          notes:      proforma.notes,
-        },
-        client:     proforma.client,
-        items,
-        conditions: budget?.conditions_text,
-        company,
-      })
-    } catch (err) {
-      alert((err as Error).message)
-    } finally {
-      setDownloading(false)
-    }
+  function handlePrint() {
+    printDocument('proforma-preview', proforma?.number ?? 'proforma')
   }
 
   if (!proforma) return null
@@ -92,13 +70,13 @@ export default function ProformaDetailModal({ isOpen, onClose, proforma, onConve
       {tab === 'preview' ? (
         <div className="max-h-[72vh] overflow-y-auto">
           <div className="flex justify-end mb-3">
-            <Button onClick={handleDownloadPdf} disabled={downloading}>
+            <Button onClick={handlePrint}>
               <Download className="w-3.5 h-3.5" />
-              {downloading ? 'Generando...' : 'Descargar PDF'}
+              Imprimir / Guardar PDF
             </Button>
           </div>
           <div className="rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-900 p-4">
-          <div className="shadow-lg rounded">
+          <div id="proforma-preview" className="shadow-lg rounded">
             <DocumentPreview
               docType="PROFORMA"
               docNumber={proforma.number}
@@ -236,9 +214,9 @@ export default function ProformaDetailModal({ isOpen, onClose, proforma, onConve
       <div className="flex justify-between items-center pt-5 mt-5 border-t border-gray-200 dark:border-gray-700">
         <div className="flex gap-2">
           <Button variant="secondary" onClick={onClose}>Cerrar</Button>
-          <Button variant="secondary" onClick={handleDownloadPdf} disabled={downloading}>
+          <Button variant="secondary" onClick={handlePrint}>
             <Download className="w-3.5 h-3.5" />
-            {downloading ? 'Generando...' : 'PDF'}
+            PDF
           </Button>
         </div>
         {proforma.status === 'active' && (

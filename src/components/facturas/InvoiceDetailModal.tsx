@@ -6,7 +6,7 @@ import Button from '@/components/ui/Button'
 import { CheckCircle, Plus, Trash2, GripVertical, FileText, LayoutList, Download } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import DocumentPreview from '@/components/shared/DocumentPreview'
-import { downloadPdf } from '@/lib/downloadPdf'
+import { printDocument } from '@/lib/printDocument'
 import type { Invoice, InvoiceItem, Client, CompanySettings } from '@/types/database'
 
 type InvoiceFull = Invoice & { invoice_items: InvoiceItem[]; client: Client | null }
@@ -55,7 +55,6 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onSaved }
   const [error, setError] = useState<string | null>(null)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [company, setCompany] = useState<CompanySettings | null>(null)
-  const [downloading, setDownloading] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -138,29 +137,8 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onSaved }
     }
   }
 
-  async function handleDownloadPdf() {
-    if (!invoice) return
-    setDownloading(true)
-    try {
-      await downloadPdf({
-        docType: 'invoice',
-        doc: {
-          number:    invoice.number,
-          status:    invoice.status,
-          issue_date: invoice.issue_date,
-          due_date:  invoice.due_date,
-          iva_pct:   invoice.iva_pct,
-          notes:     invoice.notes,
-        },
-        client: invoice.client,
-        items:  invoice.invoice_items,
-        company,
-      })
-    } catch (err) {
-      alert((err as Error).message)
-    } finally {
-      setDownloading(false)
-    }
+  function handlePrint() {
+    printDocument('invoice-preview', invoice?.number ?? 'factura')
   }
 
   async function handleMarkPaid() {
@@ -209,13 +187,13 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onSaved }
       {tab === 'preview' ? (
         <div className="max-h-[72vh] overflow-y-auto">
           <div className="flex justify-end mb-3">
-            <Button onClick={handleDownloadPdf} disabled={downloading}>
+            <Button onClick={handlePrint}>
               <Download className="w-3.5 h-3.5" />
-              {downloading ? 'Generando...' : 'Descargar PDF'}
+              Imprimir / Guardar PDF
             </Button>
           </div>
           <div className="rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-900 p-4">
-          <div className="shadow-lg rounded">
+          <div id="invoice-preview" className="shadow-lg rounded">
             <DocumentPreview
               docType="FACTURA"
               docNumber={invoice.number}
@@ -385,9 +363,9 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onSaved }
               <Button variant="secondary" onClick={onClose}>Cerrar</Button>
               <Button variant="secondary" onClick={startEditing}>Editar partidas</Button>
               {tab === 'data' && (
-                <Button variant="secondary" onClick={handleDownloadPdf} disabled={downloading}>
+                <Button variant="secondary" onClick={handlePrint}>
                   <Download className="w-3.5 h-3.5" />
-                  {downloading ? 'Generando...' : 'PDF'}
+                  PDF
                 </Button>
               )}
             </div>
