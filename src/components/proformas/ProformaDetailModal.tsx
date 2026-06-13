@@ -90,7 +90,14 @@ export default function ProformaDetailModal({ isOpen, onClose, proforma, onConve
       </div>
 
       {tab === 'preview' ? (
-        <div className="max-h-[72vh] overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-900 p-4">
+        <div className="max-h-[72vh] overflow-y-auto">
+          <div className="flex justify-end mb-3">
+            <Button onClick={handleDownloadPdf} disabled={downloading}>
+              <Download className="w-3.5 h-3.5" />
+              {downloading ? 'Generando...' : 'Descargar PDF'}
+            </Button>
+          </div>
+          <div className="rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-900 p-4">
           <div className="shadow-lg rounded">
             <DocumentPreview
               docType="PROFORMA"
@@ -103,6 +110,7 @@ export default function ProformaDetailModal({ isOpen, onClose, proforma, onConve
               conditions={budget?.conditions_text}
               company={company}
             />
+          </div>
           </div>
         </div>
       ) : (

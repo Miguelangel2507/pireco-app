@@ -207,7 +207,14 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onSaved }
       </div>
 
       {tab === 'preview' ? (
-        <div className="max-h-[72vh] overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-900 p-4">
+        <div className="max-h-[72vh] overflow-y-auto">
+          <div className="flex justify-end mb-3">
+            <Button onClick={handleDownloadPdf} disabled={downloading}>
+              <Download className="w-3.5 h-3.5" />
+              {downloading ? 'Generando...' : 'Descargar PDF'}
+            </Button>
+          </div>
+          <div className="rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-900 p-4">
           <div className="shadow-lg rounded">
             <DocumentPreview
               docType="FACTURA"
@@ -220,6 +227,7 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onSaved }
               notes={invoice.notes}
               company={company}
             />
+          </div>
           </div>
         </div>
       ) : (
@@ -365,7 +373,7 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onSaved }
         </div>
       )}
 
-      <div className="flex justify-between items-center pt-5 mt-5 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex flex-wrap justify-between items-center gap-2 pt-5 mt-5 border-t border-gray-200 dark:border-gray-700">
         {editing ? (
           <>
             <Button variant="secondary" onClick={cancelEditing} disabled={saving}>Cancelar</Button>
@@ -373,13 +381,15 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onSaved }
           </>
         ) : (
           <>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button variant="secondary" onClick={onClose}>Cerrar</Button>
               <Button variant="secondary" onClick={startEditing}>Editar partidas</Button>
-              <Button variant="secondary" onClick={handleDownloadPdf} disabled={downloading}>
-                <Download className="w-3.5 h-3.5" />
-                {downloading ? 'Generando...' : 'PDF'}
-              </Button>
+              {tab === 'data' && (
+                <Button variant="secondary" onClick={handleDownloadPdf} disabled={downloading}>
+                  <Download className="w-3.5 h-3.5" />
+                  {downloading ? 'Generando...' : 'PDF'}
+                </Button>
+              )}
             </div>
             {invoice.status !== 'paid' && (
               <Button onClick={handleMarkPaid}>
