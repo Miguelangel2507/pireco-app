@@ -117,8 +117,7 @@ body { font-family: 'Montserrat', sans-serif; color: #1C1C1E; }
 
 /* Condiciones de aceptación */
 .acc-list { margin-top: 3mm; }
-.acc-item { font-size: 7.5pt; line-height: 1.5; color: #374151; margin-bottom: 1.5mm; padding-left: 4mm; position: relative; }
-.acc-item::before { content: "•"; position: absolute; left: 1mm; color: #1E3A8A; font-weight: 700; }
+.acc-item { font-size: 7.5pt; line-height: 1.5; color: #374151; margin-bottom: 1.5mm; padding-left: 4mm; text-indent: -3mm; }
 
 /* Tratamientos */
 .trat-card { background: #F0F9FF; border-radius: 6pt; padding: 3.5mm 4.5mm; margin-bottom: 3mm; }
@@ -238,7 +237,7 @@ body { font-family: 'Montserrat', sans-serif; color: #1C1C1E; }
     <div class="title-rule"></div>
     <div class="acc-list">
       {% for item in acceptance_conditions %}
-      <div class="acc-item">{{ item }}</div>
+      <div class="acc-item">• {{ item }}</div>
       {% endfor %}
     </div>
   </div>
