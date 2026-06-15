@@ -6,7 +6,7 @@ import Button from '@/components/ui/Button'
 import { CheckCircle, Plus, Trash2, GripVertical, FileText, LayoutList, Download } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import DocumentPreview from '@/components/shared/DocumentPreview'
-import { printDocument } from '@/lib/printDocument'
+import { downloadPdf } from '@/lib/downloadPdf'
 import type { Invoice, InvoiceItem, Client, CompanySettings } from '@/types/database'
 
 type InvoiceFull = Invoice & { invoice_items: InvoiceItem[]; client: Client | null }
@@ -55,6 +55,8 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onSaved }
   const [error, setError] = useState<string | null>(null)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [company, setCompany] = useState<CompanySettings | null>(null)
+  const [generating, setGenerating] = useState(false)
+  const [pdfError, setPdfError] = useState<string | null>(null)
 
   useEffect(() => {
     if (isOpen) {
@@ -138,7 +140,29 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onSaved }
   }
 
   async function handlePrint() {
-    await printDocument('invoice-preview', invoice?.number ?? 'factura')
+    if (!invoice) return
+    setGenerating(true)
+    setPdfError(null)
+    try {
+      await downloadPdf({
+        docType: 'invoice',
+        doc: {
+          number:      invoice.number,
+          status:      invoice.status,
+          issue_date:  invoice.issue_date,
+          due_date:    invoice.due_date,
+          iva_pct:     invoice.iva_pct,
+          notes:       invoice.notes,
+        },
+        client:  invoice.client,
+        items:   invoice.invoice_items.sort((a, b) => a.sort_order - b.sort_order),
+        company,
+      })
+    } catch (err) {
+      setPdfError(err instanceof Error ? err.message : 'Error generando PDF')
+    } finally {
+      setGenerating(false)
+    }
   }
 
   async function handleMarkPaid() {
@@ -186,11 +210,12 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onSaved }
 
       {tab === 'preview' ? (
         <div className="max-h-[72vh] overflow-y-auto">
-          <div className="flex justify-end mb-3">
-            <Button onClick={handlePrint}>
+          <div className="flex flex-col items-end gap-2 mb-3">
+            <Button onClick={handlePrint} disabled={generating}>
               <Download className="w-3.5 h-3.5" />
-              Imprimir / Guardar PDF
+              {generating ? 'Generando...' : 'Descargar PDF'}
             </Button>
+            {pdfError && <p className="text-xs text-red-500">{pdfError}</p>}
           </div>
           <div className="rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-900 p-4">
           <div id="invoice-preview" className="shadow-lg rounded">
@@ -363,9 +388,9 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onSaved }
               <Button variant="secondary" onClick={onClose}>Cerrar</Button>
               <Button variant="secondary" onClick={startEditing}>Editar partidas</Button>
               {tab === 'data' && (
-                <Button variant="secondary" onClick={handlePrint}>
+                <Button variant="secondary" onClick={handlePrint} disabled={generating}>
                   <Download className="w-3.5 h-3.5" />
-                  PDF
+                  {generating ? 'Generando...' : 'PDF'}
                 </Button>
               )}
             </div>
