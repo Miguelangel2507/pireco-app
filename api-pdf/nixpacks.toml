@@ -1,8 +1,0 @@
-[phases.setup]
-nixPkgs = ['python311', 'python311Packages.weasyprint', 'python311Packages.fastapi', 'python311Packages.uvicorn', 'python311Packages.jinja2', 'python311Packages.python-multipart', 'pango', 'cairo', 'gdk-pixbuf', 'libffi', 'fontconfig', 'freetype']
-
-[phases.install]
-cmds = ['echo "deps installed via nix - skipping pip"']
-
-[start]
-cmd = "uvicorn main:app --host 0.0.0.0 --port $PORT"
